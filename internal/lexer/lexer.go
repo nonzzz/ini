@@ -11,6 +11,10 @@ type lexer struct {
 	line   int
 }
 
+type Lexical interface {
+	Next() tokenizer.Tokenizer
+}
+
 func Lexer(input []byte) *lexer {
 	l := &lexer{
 		source: input,
@@ -37,6 +41,17 @@ func (lexer *lexer) scanStatement() []byte {
 	return lexer.source[pos:lexer.pos]
 }
 
+func (lexer *lexer) scanComment() []byte {
+	pos := lexer.pos
+	for {
+		if lexer.cp == '\n' {
+			break
+		}
+		lexer.step()
+	}
+	return lexer.source[pos:lexer.pos]
+}
+
 func (lexer *lexer) Next() tokenizer.Tokenizer {
 	for lexer.cp != 0 {
 		switch lexer.cp {
@@ -48,20 +63,21 @@ func (lexer *lexer) Next() tokenizer.Tokenizer {
 			lexer.line++
 			continue
 		case '[':
-			lexer.step()
-			return tokenizer.NewToken(tokenizer.TOpenBrace, "[", lexer.line)
-		case ']':
-			lexer.step()
-			return tokenizer.NewToken(tokenizer.TCloseBrace, "]", lexer.line)
-		case ';':
-			return tokenizer.NewToken(tokenizer.TSection, ";", lexer.line)
-		case '#':
-			return tokenizer.NewToken(tokenizer.TComment, "#", lexer.line)
+			literal := string(lexer.scanStatement())
+			return tokenizer.NewToken(tokenizer.TSection, literal, lexer.line)
+		case '#', ';':
+			literal := string(lexer.scanComment())
+			return tokenizer.NewToken(tokenizer.TComment, literal, lexer.line)
 		case '=':
 			lexer.step()
 			return tokenizer.NewToken(tokenizer.TAssign, "=", lexer.line)
 		default:
-			return tokenizer.NewToken(tokenizer.TKey, string(lexer.scanStatement()), lexer.line)
+			literal := string(lexer.scanStatement())
+			if lexer.cp == '\n' || lexer.cp == 0 {
+				return tokenizer.NewToken(tokenizer.TValue, literal, lexer.line)
+			}
+			return tokenizer.NewToken(tokenizer.TKey, literal, lexer.line)
+
 		}
 
 	}

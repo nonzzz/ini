@@ -10,6 +10,7 @@ const (
 	TOpenBrace  = "OpenBrace"
 	TCloseBrace = "CloseBrace"
 	TKey        = "Key"
+	TValue      = "Value"
 	TEof        = "Eof"
 )
 
