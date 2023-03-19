@@ -12,7 +12,7 @@ type Praser struct {
 	Document *ast.Document
 }
 
-func NewParser(input []byte) {
+func NewParser(input []byte) *Praser {
 
 	p := &Praser{
 		lexer:    lexer.Lexer(input),
@@ -22,6 +22,8 @@ func NewParser(input []byte) {
 	p.ch = p.lexer.Next()
 
 	var currentSection *ast.SectionNode
+
+	var VNode *ast.VNode
 
 	for {
 		if p.ch.Kind == tokenizer.TEof {
@@ -33,12 +35,41 @@ func NewParser(input []byte) {
 				Name: p.ch,
 			}
 			if currentSection != nil {
-				//
+				p.Document.AppendChild(p.Document, currentSection)
 			}
+
+		}
+		if p.ch.Kind == tokenizer.TKey {
+			VNode = nil
+			VNode = &ast.VNode{
+				Key: p.ch,
+			}
+
+		}
+		if p.ch.Kind == tokenizer.TValue {
+
+			if VNode != nil {
+				VNode.Value = p.ch
+				if currentSection != nil {
+					currentSection.AppendChild(currentSection, VNode)
+				} else {
+					p.Document.AppendChild(p.Document, VNode)
+				}
+			}
+
+		}
+
+		if p.ch.Kind == tokenizer.TComment {
+			comment := &ast.CommentNode{
+				Name: p.ch,
+			}
+			p.Document.AppendChild(p.Document, comment)
 
 		}
 		p.eat(p.ch.Kind)
 	}
+
+	return p
 }
 
 func (parser *Praser) eat(token string) {
