@@ -37,15 +37,19 @@ func (lexer *lexer) step() {
 func (lexer *lexer) scanStatement() []byte {
 	pos := lexer.pos
 	for lexer.cp != '\n' && lexer.cp != '=' && lexer.cp != ' ' && lexer.cp != 0 {
+		if lexer.cp == ';' || lexer.cp == '#' {
+			break
+		}
 		lexer.step()
 	}
 	return lexer.source[pos:lexer.pos]
 }
 
 func (lexer *lexer) scanComment() []byte {
+	lexer.step()
 	pos := lexer.pos
 	for {
-		if lexer.cp == '\n' {
+		if lexer.cp == '\n' || lexer.cp == 0 {
 			break
 		}
 		lexer.step()
@@ -55,9 +59,17 @@ func (lexer *lexer) scanComment() []byte {
 
 func (lexer *lexer) scanSection() []byte {
 	lexer.step()
-	literal := lexer.scanComment()
-	return literal[0 : len(literal)-1]
-
+	pos := lexer.pos
+	for {
+		if lexer.cp == ']' {
+			break
+		}
+		if lexer.cp == '\n' {
+			break
+		}
+		lexer.step()
+	}
+	return lexer.source[pos:lexer.pos]
 }
 
 func (lexer *lexer) Next() tokenizer.Tokenizer {
@@ -73,6 +85,9 @@ func (lexer *lexer) Next() tokenizer.Tokenizer {
 		case '[':
 			literal := string(lexer.scanSection())
 			return tokenizer.NewToken(tokenizer.TSection, literal, lexer.line)
+		case ']':
+			lexer.step()
+			continue
 		case '#', ';':
 			literal := string(lexer.scanComment())
 			return tokenizer.NewToken(tokenizer.TComment, literal, lexer.line)
@@ -81,7 +96,7 @@ func (lexer *lexer) Next() tokenizer.Tokenizer {
 			return tokenizer.NewToken(tokenizer.TAssign, "=", lexer.line)
 		default:
 			literal := string(lexer.scanStatement())
-			if lexer.cp == '\n' || lexer.cp == 0 {
+			if lexer.cp == '\n' || lexer.cp == 0 || lexer.cp == ';' || lexer.cp == '#' {
 				return tokenizer.NewToken(tokenizer.TValue, literal, lexer.line)
 			}
 			return tokenizer.NewToken(tokenizer.TKey, literal, lexer.line)

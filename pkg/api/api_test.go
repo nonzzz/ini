@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -27,4 +28,11 @@ func TestJson(t *testing.T) {
 	if r != expected {
 		t.Fatalf("%s != %s", r, expected)
 	}
+}
+
+func TestLoad(t *testing.T) {
+	ini := New()
+	r := ini.LoadFile("../../fixture.ini").Marshl2Json()
+	fmt.Println(string(r))
+	t.Skip()
 }

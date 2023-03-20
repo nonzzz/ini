@@ -3,17 +3,13 @@ package tokenizer
 import "fmt"
 
 const (
-	TSection    = "Section"
-	TIdent      = "Ident"
-	TIllgal     = "Illgal"
-	TComment    = "Comment"
-	TComment2   = "Comment"
-	TAssign     = "Assign"
-	TOpenBrace  = "OpenBrace"
-	TCloseBrace = "CloseBrace"
-	TKey        = "Key"
-	TValue      = "Value"
-	TEof        = "Eof"
+	TSection = "Section"
+	TIdent   = "Ident"
+	TComment = "Comment"
+	TAssign  = "Assign"
+	TKey     = "Key"
+	TValue   = "Value"
+	TEof     = "Eof"
 )
 
 type Tokenizer struct {
