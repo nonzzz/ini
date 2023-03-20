@@ -2,8 +2,9 @@ package lexer
 
 import (
 	"fmt"
-	"ini/internal/tokenizer"
 	"testing"
+
+	"github.com/nonzzz/ini/internal/tokenizer"
 )
 
 func TestTokens(t *testing.T) {

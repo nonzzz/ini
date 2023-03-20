@@ -1,6 +1,6 @@
 package ast
 
-import "ini/internal/tokenizer"
+import "github.com/nonzzz/ini/internal/tokenizer"
 
 const (
 	Section  = "SectionDeclaration"

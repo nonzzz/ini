@@ -1,7 +1,7 @@
 package lexer
 
 import (
-	"ini/internal/tokenizer"
+	"github.com/nonzzz/ini/internal/tokenizer"
 )
 
 type lexer struct {

@@ -2,4 +2,11 @@
 
 A simple ini parser write with golang.
 
-WIP
+## Install
+
+```bash
+
+$ go get download nonzzz/ini
+
+```
+

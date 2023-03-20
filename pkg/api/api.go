@@ -2,9 +2,10 @@ package api
 
 import (
 	"encoding/json"
-	"ini/internal/ast"
-	"ini/internal/parser"
 	"io/ioutil"
+
+	"github.com/nonzzz/ini/internal/ast"
+	"github.com/nonzzz/ini/internal/parser"
 )
 
 type Ini struct {
