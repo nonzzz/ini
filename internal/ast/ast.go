@@ -18,7 +18,6 @@ type Node interface {
 	LastChild() Node
 	AppendChild(self, child Node)
 	RemoveChild(self, child Node)
-	// ReplaceChild(new, old Node)
 }
 
 type BaseNode struct {
@@ -138,5 +137,3 @@ func (node *BaseNode) RemoveChild(self, child Node) {
 	node.childrenCount--
 
 }
-
-// func (node *BaseNode) ReplaceChild() {}

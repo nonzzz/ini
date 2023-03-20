@@ -34,10 +34,7 @@ func NewParser(input []byte) *Praser {
 			currentSection = &ast.SectionNode{
 				Name: p.ch,
 			}
-			if currentSection != nil {
-				p.Document.AppendChild(p.Document, currentSection)
-			}
-
+			p.Document.AppendChild(p.Document, currentSection)
 		}
 		if p.ch.Kind == tokenizer.TKey {
 			VNode = nil
@@ -74,7 +71,7 @@ func NewParser(input []byte) *Praser {
 
 func (parser *Praser) eat(token string) {
 	if parser.ch.Kind == token {
-		parser.lexer.Next()
+		parser.ch = parser.lexer.Next()
 		return
 	}
 }
