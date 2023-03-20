@@ -2,10 +2,14 @@ package ast
 
 import "ini/internal/tokenizer"
 
-type NodeType int
+const (
+	Section  = "SectionDeclaration"
+	Variable = "VariableDeclaration"
+	Program  = "Program"
+)
 
 type Node interface {
-	Type() NodeType
+	Type() string
 	NextSibling() Node
 	PrevSibling() Node
 	Parent() Node
@@ -27,14 +31,15 @@ type BaseNode struct {
 	next          Node
 	prev          Node
 	childrenCount int
+	nodeType      string
 }
 
 type SectionNode struct {
 	BaseNode
-	Name tokenizer.Tokenizer
+	Token tokenizer.Tokenizer
 }
 
-type VNode struct {
+type VariableNode struct {
 	BaseNode
 	Key   tokenizer.Tokenizer
 	Value tokenizer.Tokenizer
@@ -44,7 +49,7 @@ type VNode struct {
 
 type CommentNode struct {
 	BaseNode
-	Name tokenizer.Tokenizer
+	Token tokenizer.Tokenizer
 }
 
 type Document struct {
@@ -52,12 +57,13 @@ type Document struct {
 }
 
 func NewDocument() *Document {
-
-	return &Document{}
+	d := &Document{}
+	d.nodeType = Program
+	return d
 }
 
-func (node *BaseNode) Type() NodeType {
-	return 0
+func (node *BaseNode) Type() string {
+	return node.nodeType
 }
 
 func (node *BaseNode) NextSibling() Node {

@@ -25,6 +25,7 @@ func Lexer(input []byte) *lexer {
 }
 
 func (lexer *lexer) step() {
+
 	lexer.pos += 1
 	if lexer.pos > len(lexer.source)-1 {
 		lexer.cp = 0
@@ -52,6 +53,13 @@ func (lexer *lexer) scanComment() []byte {
 	return lexer.source[pos:lexer.pos]
 }
 
+func (lexer *lexer) scanSection() []byte {
+	lexer.step()
+	literal := lexer.scanComment()
+	return literal[0 : len(literal)-1]
+
+}
+
 func (lexer *lexer) Next() tokenizer.Tokenizer {
 	for lexer.cp != 0 {
 		switch lexer.cp {
@@ -63,7 +71,7 @@ func (lexer *lexer) Next() tokenizer.Tokenizer {
 			lexer.line++
 			continue
 		case '[':
-			literal := string(lexer.scanStatement())
+			literal := string(lexer.scanSection())
 			return tokenizer.NewToken(tokenizer.TSection, literal, lexer.line)
 		case '#', ';':
 			literal := string(lexer.scanComment())

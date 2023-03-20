@@ -23,7 +23,7 @@ func NewParser(input []byte) *Praser {
 
 	var currentSection *ast.SectionNode
 
-	var VNode *ast.VNode
+	var VNode *ast.VariableNode
 
 	for {
 		if p.ch.Kind == tokenizer.TEof {
@@ -32,13 +32,13 @@ func NewParser(input []byte) *Praser {
 		if p.ch.Kind == tokenizer.TSection {
 			currentSection = nil
 			currentSection = &ast.SectionNode{
-				Name: p.ch,
+				Token: p.ch,
 			}
 			p.Document.AppendChild(p.Document, currentSection)
 		}
 		if p.ch.Kind == tokenizer.TKey {
 			VNode = nil
-			VNode = &ast.VNode{
+			VNode = &ast.VariableNode{
 				Key: p.ch,
 			}
 
@@ -58,7 +58,7 @@ func NewParser(input []byte) *Praser {
 
 		if p.ch.Kind == tokenizer.TComment {
 			comment := &ast.CommentNode{
-				Name: p.ch,
+				Token: p.ch,
 			}
 			p.Document.AppendChild(p.Document, comment)
 

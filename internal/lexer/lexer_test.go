@@ -25,8 +25,8 @@ func TestTokens(t *testing.T) {
 		{Kind: tokenizer.TKey, Value: "b", Line: 1},
 		{Kind: tokenizer.TAssign, Value: "=", Line: 1},
 		{Kind: tokenizer.TValue, Value: "456", Line: 1},
-		{Kind: tokenizer.TSection, Value: "[s1]", Line: 2},
-		{Kind: tokenizer.TSection, Value: "[s8]", Line: 4},
+		{Kind: tokenizer.TSection, Value: "s1", Line: 2},
+		{Kind: tokenizer.TSection, Value: "s8", Line: 4},
 		{Kind: tokenizer.TComment, Value: "#123456789", Line: 6},
 		{Kind: tokenizer.TComment, Value: ";anothr testvvv", Line: 8},
 	}

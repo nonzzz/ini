@@ -1,5 +1,7 @@
 package tokenizer
 
+import "fmt"
+
 const (
 	TSection    = "Section"
 	TIdent      = "Ident"
@@ -27,4 +29,11 @@ func NewToken(kind string, value string, line int) Tokenizer {
 		Value: value,
 		Line:  line,
 	}
+}
+
+func (token Tokenizer) String() string {
+	return fmt.Sprintf("{Kind:%s,Value:\"%s\" Linie:%d}",
+		token.Kind,
+		token.Value,
+		token.Line)
 }

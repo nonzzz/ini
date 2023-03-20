@@ -21,6 +21,7 @@ func (ini *Ini) Parse(input string) *Ini {
 }
 
 func (ini *Ini) Marshl2Map() map[string]interface{} {
+
 	if ini.document == nil {
 		return nil
 	}
@@ -28,23 +29,21 @@ func (ini *Ini) Marshl2Map() map[string]interface{} {
 	maps := make(map[string]interface{})
 
 	for c := ini.document.FirstChild(); c != nil; c = c.NextSibling() {
-		if vnode, ok := c.(*ast.VNode); ok {
-			maps[vnode.Key.Value] = vnode.Value.Value
+
+		if bn, ok := c.(*ast.VariableNode); ok {
+			maps[bn.Key.Value] = bn.Value.Value
 		}
-		if sect_node, ok := c.(*ast.SectionNode); ok {
 
+		if sn, ok := c.(*ast.SectionNode); ok {
 			secMap := make(map[string]interface{})
-
-			for kv := sect_node.FirstChild(); kv != nil; kv = kv.NextSibling() {
-				if kvnode, ok := kv.(*ast.VNode); ok {
-					secMap[kvnode.Key.Value] = kvnode.Value.Value
+			for bn := sn.FirstChild(); bn != nil; bn = bn.NextSibling() {
+				if nest, ok := bn.(*ast.VariableNode); ok {
+					secMap[nest.Key.Value] = nest.Value.Value
 				}
 			}
-
-			maps[sect_node.Name.Value] = secMap
+			maps[sn.Token.Value] = secMap
 			continue
 		}
-
 	}
 	return maps
 }
