@@ -2,14 +2,13 @@ package ast
 
 import "github.com/nonzzz/ini/internal/tokenizer"
 
-const (
-	Section  = "SectionDeclaration"
-	Variable = "VariableDeclaration"
-	Program  = "Program"
-)
+type Property struct {
+	NodeType tokenizer.T
+	Literal  string
+	Line     int
+}
 
 type Node interface {
-	Type() string
 	NextSibling() Node
 	PrevSibling() Node
 	Parent() Node
@@ -31,25 +30,24 @@ type BaseNode struct {
 	next          Node
 	prev          Node
 	childrenCount int
-	nodeType      string
 }
 
 type SectionNode struct {
 	BaseNode
-	Token tokenizer.Tokenizer
+	Value Property
 }
 
-type VariableNode struct {
+type ExpressionNode struct {
 	BaseNode
-	Key   tokenizer.Tokenizer
-	Value tokenizer.Tokenizer
+	Key   Property
+	Value Property
 	Index int
 	Line  int
 }
 
 type CommentNode struct {
 	BaseNode
-	Token tokenizer.Tokenizer
+	Value Property
 }
 
 type Document struct {
@@ -58,12 +56,29 @@ type Document struct {
 
 func NewDocument() *Document {
 	d := &Document{}
-	d.nodeType = Program
 	return d
 }
 
-func (node *BaseNode) Type() string {
-	return node.nodeType
+func NewSection(literal string, line int) *SectionNode {
+	prop := Property{
+		NodeType: tokenizer.TSection,
+		Literal:  literal,
+		Line:     line,
+	}
+	return &SectionNode{
+		Value: prop,
+	}
+}
+
+func NewComment(literal string, line int) *CommentNode {
+	prop := Property{
+		NodeType: tokenizer.TComment,
+		Literal:  literal,
+		Line:     line,
+	}
+	return &CommentNode{
+		Value: prop,
+	}
 }
 
 func (node *BaseNode) NextSibling() Node {

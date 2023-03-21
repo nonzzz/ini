@@ -7,7 +7,6 @@ import (
 )
 
 type Praser struct {
-	ch       tokenizer.Tokenizer
 	lexer    lexer.Lexical
 	Document *ast.Document
 }
@@ -19,59 +18,53 @@ func NewParser(input []byte) *Praser {
 		Document: ast.NewDocument(),
 	}
 
-	p.ch = p.lexer.Next()
-
 	var currentSection *ast.SectionNode
 
-	var VNode *ast.VariableNode
+	var expression *ast.ExpressionNode
 
 	for {
-		if p.ch.Kind == tokenizer.TEof {
+		if p.lexer.Token() == tokenizer.TEof {
 			break
 		}
-		if p.ch.Kind == tokenizer.TSection {
-			currentSection = nil
-			currentSection = &ast.SectionNode{
-				Token: p.ch,
-			}
+		tok := p.lexer.Token()
+		literal := p.lexer.Literal()
+		line := p.lexer.Line()
+		if tok == tokenizer.TSection {
+			currentSection = ast.NewSection(literal, line)
 			p.Document.AppendChild(p.Document, currentSection)
 		}
-		if p.ch.Kind == tokenizer.TKey {
-			VNode = nil
-			VNode = &ast.VariableNode{
-				Key: p.ch,
+		if tok == tokenizer.TKey {
+			expression = &ast.ExpressionNode{
+				Key: ast.Property{
+					NodeType: tok,
+					Literal:  literal,
+					Line:     line,
+				},
 			}
-
 		}
-		if p.ch.Kind == tokenizer.TValue {
-
-			if VNode != nil {
-				VNode.Value = p.ch
-				if currentSection != nil {
-					currentSection.AppendChild(currentSection, VNode)
-				} else {
-					p.Document.AppendChild(p.Document, VNode)
-				}
+		if tok == tokenizer.TValue && expression != nil {
+			expression.Value = ast.Property{
+				NodeType: tok,
+				Literal:  literal,
+				Line:     line,
 			}
-
-		}
-
-		if p.ch.Kind == tokenizer.TComment {
-			comment := &ast.CommentNode{
-				Token: p.ch,
+			if currentSection != nil {
+				currentSection.AppendChild(currentSection, expression)
+			} else {
+				p.Document.AppendChild(p.Document, expression)
 			}
-			p.Document.AppendChild(p.Document, comment)
-
 		}
-		p.eat(p.ch.Kind)
+		if tok == tokenizer.TComment {
+			p.Document.AppendChild(p.Document, ast.NewComment(literal, line))
+		}
+		p.eat(tok)
 	}
-
 	return p
 }
 
-func (parser *Praser) eat(token string) {
-	if parser.ch.Kind == token {
-		parser.ch = parser.lexer.Next()
+func (parser *Praser) eat(token tokenizer.T) {
+	if parser.lexer.Token() == token {
+		parser.lexer.Next()
 		return
 	}
 }

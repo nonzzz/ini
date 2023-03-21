@@ -1,80 +1,55 @@
 package lexer
 
 import (
+	"unicode/utf8"
+
 	"github.com/nonzzz/ini/internal/tokenizer"
 )
 
 type lexer struct {
-	source []byte
-	cp     byte
-	pos    int
-	line   int
+	source  []byte
+	cp      rune
+	pos     int
+	token   tokenizer.T
+	line    int
+	literal string
 }
 
 type Lexical interface {
-	Next() tokenizer.Tokenizer
+	Next()
+	Token() tokenizer.T
+	Line() int
+	Literal() string
 }
 
 func Lexer(input []byte) *lexer {
 	l := &lexer{
 		source: input,
-		pos:    0,
 	}
-	l.cp = l.source[l.pos]
+	l.step()
+	l.Next()
 	return l
 }
 
 func (lexer *lexer) step() {
 
-	lexer.pos += 1
-	if lexer.pos > len(lexer.source)-1 {
-		lexer.cp = 0
-		return
+	cp, width := utf8.DecodeRune(lexer.source[lexer.pos:])
+
+	if width == 0 {
+		cp = -1
 	}
-	lexer.cp = lexer.source[lexer.pos]
+
+	lexer.cp = cp
+	lexer.pos += width
 }
 
-func (lexer *lexer) scanStatement() []byte {
-	pos := lexer.pos
-	for lexer.cp != '\n' && lexer.cp != '=' && lexer.cp != ' ' && lexer.cp != 0 {
-		if lexer.cp == ';' || lexer.cp == '#' {
-			break
-		}
-		lexer.step()
-	}
-	return lexer.source[pos:lexer.pos]
-}
+func (lexer *lexer) Next() {
 
-func (lexer *lexer) scanComment() []byte {
-	lexer.step()
-	pos := lexer.pos
 	for {
-		if lexer.cp == '\n' || lexer.cp == 0 {
-			break
-		}
-		lexer.step()
-	}
-	return lexer.source[pos:lexer.pos]
-}
-
-func (lexer *lexer) scanSection() []byte {
-	lexer.step()
-	pos := lexer.pos
-	for {
-		if lexer.cp == ']' {
-			break
-		}
-		if lexer.cp == '\n' {
-			break
-		}
-		lexer.step()
-	}
-	return lexer.source[pos:lexer.pos]
-}
-
-func (lexer *lexer) Next() tokenizer.Tokenizer {
-	for lexer.cp != 0 {
+		lexer.token = 0
 		switch lexer.cp {
+		case -1:
+			lexer.token = tokenizer.TEof
 		case ' ', '\t':
 			lexer.step()
 			continue
@@ -83,26 +58,59 @@ func (lexer *lexer) Next() tokenizer.Tokenizer {
 			lexer.line++
 			continue
 		case '[':
-			literal := string(lexer.scanSection())
-			return tokenizer.NewToken(tokenizer.TSection, literal, lexer.line)
+			pos := lexer.pos
+			for {
+				if lexer.cp == ']' {
+					break
+				}
+				lexer.step()
+			}
+			lexer.literal = string(lexer.source[pos : lexer.pos-1])
+			lexer.token = tokenizer.TSection
 		case ']':
 			lexer.step()
 			continue
-		case '#', ';':
-			literal := string(lexer.scanComment())
-			return tokenizer.NewToken(tokenizer.TComment, literal, lexer.line)
 		case '=':
+			lexer.literal = "="
+			lexer.token = tokenizer.TAssign
 			lexer.step()
-			return tokenizer.NewToken(tokenizer.TAssign, "=", lexer.line)
-		default:
-			literal := string(lexer.scanStatement())
-			if lexer.cp == '\n' || lexer.cp == 0 || lexer.cp == ';' || lexer.cp == '#' {
-				return tokenizer.NewToken(tokenizer.TValue, literal, lexer.line)
+		case '#', ';':
+			pos := lexer.pos
+			for {
+				if lexer.cp == '\n' || lexer.cp == -1 {
+					break
+				}
+				lexer.step()
 			}
-			return tokenizer.NewToken(tokenizer.TKey, literal, lexer.line)
-
+			lexer.literal = string(lexer.source[pos:lexer.pos])
+			lexer.token = tokenizer.TComment
+		default:
+			pos := lexer.pos - 1
+			for {
+				if lexer.cp == '\n' || lexer.cp == '=' || lexer.cp == ';' || lexer.cp == '#' || lexer.cp == ' ' || lexer.cp == -1 {
+					break
+				}
+				lexer.step()
+			}
+			lexer.literal = string(lexer.source[pos : lexer.pos-1])
+			if lexer.cp == '\n' || lexer.cp == -1 || lexer.cp == ';' || lexer.cp == '#' {
+				lexer.token = tokenizer.TValue
+				return
+			}
+			lexer.token = tokenizer.TKey
 		}
-
+		return
 	}
-	return tokenizer.NewToken(tokenizer.TEof, "Eof", lexer.line)
+}
+
+func (lexer *lexer) Token() tokenizer.T {
+	return lexer.token
+}
+
+func (lexer *lexer) Line() int {
+	return lexer.line
+}
+
+func (lexer *lexer) Literal() string {
+	return lexer.literal
 }

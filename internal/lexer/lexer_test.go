@@ -1,158 +1,105 @@
 package lexer
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/nonzzz/ini/internal/test"
 	"github.com/nonzzz/ini/internal/tokenizer"
 )
 
-func TestTokens(t *testing.T) {
-	c1 := `a = 123
-	b=456
-	[s1]
-
-	[s8]
-
-	#123456789
-
-	;anothr testvvv
-
-	`
-	expected := []tokenizer.Tokenizer{
-		{Kind: tokenizer.TKey, Value: "a", Line: 0},
-		{Kind: tokenizer.TAssign, Value: "=", Line: 0},
-		{Kind: tokenizer.TValue, Value: "123", Line: 0},
-		{Kind: tokenizer.TKey, Value: "b", Line: 1},
-		{Kind: tokenizer.TAssign, Value: "=", Line: 1},
-		{Kind: tokenizer.TValue, Value: "456", Line: 1},
-		{Kind: tokenizer.TSection, Value: "s1", Line: 2},
-		{Kind: tokenizer.TSection, Value: "s8", Line: 4},
-		{Kind: tokenizer.TComment, Value: "123456789", Line: 6},
-		{Kind: tokenizer.TComment, Value: "anothr testvvv", Line: 8},
-	}
-	l := Lexer([]byte(c1))
-	for _, ident := range expected {
-		tok := l.Next()
-		if tok.Kind != ident.Kind {
-			t.Fatalf("%s != %s", tok.Kind, ident.Kind)
-		}
-		if tok.Value != ident.Value {
-			fmt.Println(tok)
-			t.Fatalf("%s != %s", tok.Value, ident.Value)
-		}
-		if tok.Line != ident.Line {
-			t.Fatalf("%d != %d", tok.Line, ident.Line)
-		}
-	}
+func lexToken(input string) tokenizer.T {
+	l := Lexer([]byte(input))
+	return l.Token()
 
 }
 
-func TestCommentFollowVariable(t *testing.T) {
-	txt := `a=123; This is a  comment variants.
- b=456# This is comment.
- `
+func TestTokens(t *testing.T) {
+	expected := []struct {
+		content string
+		token   tokenizer.T
+	}{
+		{"", tokenizer.TEof},
+		{";", tokenizer.TComment},
+		{"#", tokenizer.TComment},
+		{"=", tokenizer.TAssign},
+	}
 
-	expected := []tokenizer.Tokenizer{
-		{Kind: tokenizer.TKey, Value: "a", Line: 0},
-		{Kind: tokenizer.TAssign, Value: "=", Line: 0},
-		{Kind: tokenizer.TValue, Value: "123", Line: 0},
-		{Kind: tokenizer.TComment, Value: " This is a  comment variants.", Line: 0},
-		{Kind: tokenizer.TKey, Value: "b", Line: 1},
-		{Kind: tokenizer.TAssign, Value: "=", Line: 1},
-		{Kind: tokenizer.TValue, Value: "456", Line: 1},
-		{Kind: tokenizer.TComment, Value: " This is comment.", Line: 1},
+	for _, tok := range expected {
+		t.Run(tok.content, func(t *testing.T) {
+			test.AssertEqual(t, lexToken(tok.content), tok.token)
+		})
 	}
-	l := Lexer([]byte(txt))
-	for _, ident := range expected {
-		tok := l.Next()
-		if tok.Kind != ident.Kind {
-			t.Fatalf("%s != %s", tok.Kind, ident.Kind)
-		}
-		if tok.Value != ident.Value {
-			t.Fatalf("%s != %s", tok.Value, ident.Value)
-		}
-		if tok.Line != ident.Line {
-			t.Fatalf("%d != %d", tok.Line, ident.Line)
-		}
-	}
+}
+
+func expectComment(t *testing.T, input string, expect string) {
+	t.Helper()
+	t.Run(input, func(t *testing.T) {
+		l := Lexer([]byte(input))
+		test.AssertEqual(t, l.Literal(), expect)
+	})
+}
+
+func TestComment(t *testing.T) {
+	expectComment(t, ";123456", "123456")
+	expectComment(t, "#456789", "456789")
+	expectComment(t, "# 1 2 3 4", " 1 2 3 4")
+	expectComment(t, "; 1 2 3 4", " 1 2 3 4")
+	expectComment(t, "#;1111", ";1111")
+}
+
+func expectMultipleComment(t *testing.T, input string, expect string) {
+	t.Helper()
+	t.Run(input, func(t *testing.T) {
+		l := Lexer([]byte(input))
+		l.Next()
+		test.AssertEqual(t, l.Literal(), expect)
+	})
+}
+
+func TestMultipleComment(t *testing.T) {
+	expectMultipleComment(t, ";123\n# 456", " 456")
+	expectMultipleComment(t, ";123\n#; 456", "; 456")
+}
+
+func expectCommentAndSection(t *testing.T, input, expect1, expect2 string) {
+	t.Helper()
+	t.Run(input, func(t *testing.T) {
+		l := Lexer([]byte(input))
+		test.AssertEqual(t, l.Literal(), expect1)
+		l.Next()
+		test.AssertEqual(t, l.Literal(), expect2)
+	})
 }
 
 func TestCommentFollowSection(t *testing.T) {
-	txt := `
-	[S1];test1
-	[S2]#test2
-	`
-
-	expected := []tokenizer.Tokenizer{
-		{Kind: tokenizer.TSection, Value: "S1", Line: 1},
-		{Kind: tokenizer.TComment, Value: "test1", Line: 1},
-		{Kind: tokenizer.TSection, Value: "S2", Line: 2},
-		{Kind: tokenizer.TComment, Value: "test2", Line: 2},
-	}
-	l := Lexer([]byte(txt))
-	for _, ident := range expected {
-		tok := l.Next()
-		if tok.Kind != ident.Kind {
-			t.Fatalf("%s != %s", tok.Kind, ident.Kind)
-		}
-		if tok.Value != ident.Value {
-			t.Fatalf("%s != %s", tok.Value, ident.Value)
-		}
-		if tok.Line != ident.Line {
-			t.Fatalf("%d != %d", tok.Line, ident.Line)
-		}
-	}
+	expectCommentAndSection(t, "[s1];comment1", "s1", "comment1")
+	expectCommentAndSection(t, "[s2]\n;comment2", "s2", "comment2")
+	expectCommentAndSection(t, "[s3]\n#;comment3", "s3", ";comment3")
 }
 
-func TestSectionWidthEdge(t *testing.T) {
-	txt := `
-	[S1#1];test1
-	[S2#2]#test2
-	`
-	expected := []tokenizer.Tokenizer{
-		{Kind: tokenizer.TSection, Value: "S1#1", Line: 1},
-		{Kind: tokenizer.TComment, Value: "test1", Line: 1},
-		{Kind: tokenizer.TSection, Value: "S2#2", Line: 2},
-		{Kind: tokenizer.TComment, Value: "test2", Line: 2},
-	}
-	l := Lexer([]byte(txt))
-	for _, ident := range expected {
-		tok := l.Next()
-		if tok.Kind != ident.Kind {
-			t.Fatalf("%s != %s", tok.Kind, ident.Kind)
-		}
-		if tok.Value != ident.Value {
-			t.Fatalf("%s != %s", tok.Value, ident.Value)
-		}
-		if tok.Line != ident.Line {
-			t.Fatalf("%d != %d", tok.Line, ident.Line)
-		}
-	}
-}
+func TestCommentFollowVariable(t *testing.T) {
 
-func TestWithOutEndOfLine(t *testing.T) {
+	txt := "a = 1\nb=2;999"
 
-	txt := `[s1]
-	a=3`
-	expected := []tokenizer.Tokenizer{
-		{Kind: tokenizer.TSection, Value: "s1", Line: 0},
-		{Kind: tokenizer.TKey, Value: "a", Line: 1},
-		{Kind: tokenizer.TAssign, Value: "=", Line: 1},
-		{Kind: tokenizer.TValue, Value: "3", Line: 1},
-		{Kind: tokenizer.TEof, Value: "Eof", Line: 1},
+	expected := []struct {
+		content string
+		token   tokenizer.T
+		line    int
+	}{
+		{"a", tokenizer.TKey, 0},
+		{"=", tokenizer.TAssign, 0},
+		{"1", tokenizer.TValue, 0},
+		{"b", tokenizer.TKey, 1},
+		{"=", tokenizer.TAssign, 1},
+		{"2", tokenizer.TValue, 1},
+		{"999", tokenizer.TComment, 1},
 	}
+
 	l := Lexer([]byte(txt))
-	for _, ident := range expected {
-		tok := l.Next()
-		if tok.Kind != ident.Kind {
-			t.Fatalf("%s != %s", tok.Kind, ident.Kind)
-		}
-		if tok.Value != ident.Value {
-			t.Fatalf("%s != %s", tok.Value, ident.Value)
-		}
-		if tok.Line != ident.Line {
-			t.Fatalf("%d != %d", tok.Line, ident.Line)
-		}
+	for _, tok := range expected {
+		test.AssertEqual(t, l.Literal(), tok.content)
+		test.AssertEqual(t, l.Line(), tok.line)
+		test.AssertEqual(t, l.Token(), tok.token)
+		l.Next()
 	}
 }
