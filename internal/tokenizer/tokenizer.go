@@ -9,4 +9,5 @@ const (
 	TAssign
 	TKey
 	TValue
+	TDocument
 )

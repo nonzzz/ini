@@ -66,7 +66,7 @@ func (lexer *lexer) Next() {
 				lexer.step()
 			}
 			lexer.literal = string(lexer.source[pos : lexer.pos-1])
-			lexer.token = tokenizer.TComment
+			lexer.token = tokenizer.TSection
 		case ']':
 			lexer.step()
 			continue
@@ -87,17 +87,17 @@ func (lexer *lexer) Next() {
 		default:
 			pos := lexer.pos - 1
 			for {
-				if lexer.cp == '\n' || lexer.cp == '=' || lexer.cp == ';' || lexer.cp == '#' {
+				if lexer.cp == '\n' || lexer.cp == '=' || lexer.cp == ';' || lexer.cp == '#' || lexer.cp == ' ' || lexer.cp == -1 {
 					break
 				}
 				lexer.step()
 			}
 			lexer.literal = string(lexer.source[pos : lexer.pos-1])
-			if lexer.cp == '=' {
-				lexer.token = tokenizer.TKey
+			if lexer.cp == '\n' || lexer.cp == -1 || lexer.cp == ';' || lexer.cp == '#' {
+				lexer.token = tokenizer.TValue
 				return
 			}
-			lexer.token = tokenizer.TValue
+			lexer.token = tokenizer.TKey
 		}
 		return
 	}

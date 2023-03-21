@@ -79,7 +79,7 @@ func TestCommentFollowSection(t *testing.T) {
 
 func TestCommentFollowVariable(t *testing.T) {
 
-	txt := "a=1\nb=2;999"
+	txt := "a = 1\nb=2;999"
 
 	expected := []struct {
 		content string
