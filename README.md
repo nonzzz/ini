@@ -12,7 +12,7 @@ A simple ini parser write with golang.
 
 ```bash
 
-$ go get nonzzz/ini
+$ go get github.com/nonzzz/ini
 
 ```
 

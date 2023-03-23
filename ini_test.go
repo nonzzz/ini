@@ -37,7 +37,3 @@ func TestLoad(t *testing.T) {
 		t.Fatalf("%s != %s", r, expected)
 	}
 }
-
-func TestSection(t *testing.T) {
-
-}
