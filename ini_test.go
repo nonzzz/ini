@@ -1,4 +1,4 @@
-package api
+package ini
 
 import (
 	"testing"
@@ -31,9 +31,13 @@ func TestJson(t *testing.T) {
 
 func TestLoad(t *testing.T) {
 	ini := New()
-	r := ini.LoadFile("../../fixture.ini").Marshl2Json()
+	r := ini.LoadFile("./fixture.ini").Marshl2Json()
 	expected := `{"node1#123":{"a":"1","b":"2","c":"3","d":"4"},"node2#456":{}}`
 	if string(r) != expected {
 		t.Fatalf("%s != %s", r, expected)
 	}
+}
+
+func TestSection(t *testing.T) {
+
 }

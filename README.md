@@ -20,10 +20,10 @@ $ go get nonzzz/ini
 
 ```go
 
-ini := api.New()
+i := ini.New()
 
 //  Load File
-ini.LoadFile("your ini file")
+i.LoadFile("your ini file")
 
 // Parse
 

@@ -1,8 +1,8 @@
-package api
+package ini
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 
 	"github.com/nonzzz/ini/internal/ast"
 	"github.com/nonzzz/ini/internal/parser"
@@ -61,7 +61,7 @@ func (ini *Ini) Marshl2Json() []byte {
 
 func (ini *Ini) LoadFile(file string) *Ini {
 
-	buf, err := ioutil.ReadFile(file)
+	buf, err := os.ReadFile(file)
 
 	if err != nil {
 		ini.err = err
