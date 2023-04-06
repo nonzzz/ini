@@ -18,9 +18,9 @@ func NewParser(input []byte) *Praser {
 		Document: ast.NewDocument(),
 	}
 
-	var currentSection *ast.SectionNode
+	var currentSection *ast.Section
 
-	var expression *ast.ExpressionNode
+	var expression *ast.Expression
 
 	for {
 		if p.lexer.Token() == tokenizer.TEof {
@@ -30,32 +30,25 @@ func NewParser(input []byte) *Praser {
 		literal := p.lexer.Literal()
 		line := p.lexer.Line()
 		if tok == tokenizer.TSection {
-			currentSection = ast.NewSection(literal, line)
+			currentSection = ast.NewSection(literal, line, tok)
 			p.Document.AppendChild(p.Document, currentSection)
 		}
+
 		if tok == tokenizer.TKey {
-			expression = &ast.ExpressionNode{
-				Key: ast.Property{
-					NodeType: tok,
-					Literal:  literal,
-					Line:     line,
-				},
-			}
+			expression = ast.NewExpression(literal, "", line, tokenizer.TExpression)
 		}
+
 		if tok == tokenizer.TValue && expression != nil {
-			expression.Value = ast.Property{
-				NodeType: tok,
-				Literal:  literal,
-				Line:     line,
-			}
+			expression.Value = literal
 			if currentSection != nil {
 				currentSection.AppendChild(currentSection, expression)
 			} else {
 				p.Document.AppendChild(p.Document, expression)
 			}
 		}
+
 		if tok == tokenizer.TComment {
-			p.Document.AppendChild(p.Document, ast.NewComment(literal, line))
+			p.Document.AppendChild(p.Document, ast.NewComment(literal, line, tok))
 		}
 		p.eat(tok)
 	}

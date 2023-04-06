@@ -2,10 +2,17 @@ package ast
 
 import "github.com/nonzzz/ini/internal/tokenizer"
 
-type Property struct {
-	NodeType tokenizer.T
-	Literal  string
-	Line     int
+type property struct {
+	Type    tokenizer.T
+	Literal string
+	Line    int
+}
+
+type expressionProperty struct {
+	Type  tokenizer.T
+	Key   string
+	Value string
+	Line  int
 }
 
 type Node interface {
@@ -32,53 +39,58 @@ type BaseNode struct {
 	childrenCount int
 }
 
-type SectionNode struct {
+type Section struct {
 	BaseNode
-	Value Property
+	property
 }
 
-type ExpressionNode struct {
+type Expression struct {
 	BaseNode
-	Key   Property
-	Value Property
-	Index int
-	Line  int
+	expressionProperty
 }
 
-type CommentNode struct {
+type Comment struct {
 	BaseNode
-	Value Property
+	property
 }
 
 type Document struct {
 	BaseNode
 }
 
+func newNode(literal string, line int, tok tokenizer.T) property {
+	return property{
+		Literal: literal,
+		Line:    line,
+		Type:    tok,
+	}
+}
+
+func NewSection(literal string, line int, tok tokenizer.T) *Section {
+	return &Section{
+		property: newNode(literal, line, tok),
+	}
+}
+
+func NewComment(literal string, line int, tok tokenizer.T) *Comment {
+	return &Comment{
+		property: newNode(literal, line, tok),
+	}
+}
+
+func NewExpression(key, value string, line int, tok tokenizer.T) *Expression {
+	return &Expression{
+		expressionProperty: expressionProperty{
+			Key:   key,
+			Value: value,
+			Line:  line,
+			Type:  tok,
+		},
+	}
+}
+
 func NewDocument() *Document {
-	d := &Document{}
-	return d
-}
-
-func NewSection(literal string, line int) *SectionNode {
-	prop := Property{
-		NodeType: tokenizer.TSection,
-		Literal:  literal,
-		Line:     line,
-	}
-	return &SectionNode{
-		Value: prop,
-	}
-}
-
-func NewComment(literal string, line int) *CommentNode {
-	prop := Property{
-		NodeType: tokenizer.TComment,
-		Literal:  literal,
-		Line:     line,
-	}
-	return &CommentNode{
-		Value: prop,
-	}
+	return &Document{}
 }
 
 func (node *BaseNode) NextSibling() Node {

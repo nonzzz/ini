@@ -6,6 +6,7 @@ const (
 	TEof T = iota
 	TSection
 	TComment
+	TExpression
 	TAssign
 	TKey
 	TValue

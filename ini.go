@@ -30,20 +30,18 @@ func (ini *Ini) Marshl2Map() map[string]interface{} {
 	}
 
 	maps := make(map[string]interface{})
-
-	for c := ini.document.FirstChild(); c != nil; c = c.NextSibling() {
-
-		if bn, ok := c.(*ast.ExpressionNode); ok {
-			maps[bn.Key.Literal] = bn.Value.Literal
+	for n := ini.document.FirstChild(); n != nil; n = n.NextSibling() {
+		if expression, ok := n.(*ast.Expression); ok {
+			maps[expression.Key] = expression.Value
 		}
-		if sn, ok := c.(*ast.SectionNode); ok {
-			secMap := make(map[string]interface{})
-			for bn := sn.FirstChild(); bn != nil; bn = bn.NextSibling() {
-				if nest, ok := bn.(*ast.ExpressionNode); ok {
-					secMap[nest.Key.Literal] = nest.Value.Literal
+		if section, ok := n.(*ast.Section); ok {
+			sectionMap := make(map[string]interface{})
+			for bn := section.FirstChild(); bn != nil; bn = bn.NextSibling() {
+				if nest, ok := bn.(*ast.Expression); ok {
+					sectionMap[nest.Key] = nest.Value
 				}
 			}
-			maps[sn.Value.Literal] = secMap
+			maps[section.Literal] = sectionMap
 			continue
 		}
 	}
