@@ -71,3 +71,7 @@ func (ini *Ini) LoadFile(file string) *Ini {
 func (ini *Ini) Err() error {
 	return ini.err
 }
+
+func (ini *Ini) Ast() *ast.Document {
+	return ini.document
+}
