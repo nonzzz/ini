@@ -13,6 +13,22 @@ type Ini struct {
 	err      error
 }
 
+type Visitor interface {
+	Section(*ast.Section)
+	Expression(*ast.Expression)
+	Comment(*ast.Comment)
+}
+
+type IniVisitor struct {
+	Visitor
+}
+
+func (b *IniVisitor) Section(node *ast.Section) {}
+
+func (b *IniVisitor) Comment(node *ast.Comment) {}
+
+func (b *IniVisitor) Expression(node *ast.Expression) {}
+
 func New() *Ini {
 	return &Ini{}
 }
@@ -23,7 +39,7 @@ func (ini *Ini) Parse(input string) *Ini {
 	return ini
 }
 
-func (ini *Ini) Marshl2Map() map[string]interface{} {
+func (ini *Ini) Marshal2Map() map[string]interface{} {
 
 	if ini.document == nil {
 		return nil
@@ -48,8 +64,8 @@ func (ini *Ini) Marshl2Map() map[string]interface{} {
 	return maps
 }
 
-func (ini *Ini) Marshl2Json() []byte {
-	maps := ini.Marshl2Map()
+func (ini *Ini) Marshal2Json() []byte {
+	maps := ini.Marshal2Map()
 	if maps == nil {
 		return nil
 	}
@@ -74,4 +90,25 @@ func (ini *Ini) Err() error {
 
 func (ini *Ini) Ast() *ast.Document {
 	return ini.document
+}
+
+func (ini *Ini) Accept(v Visitor) {
+	doc := ini.document
+	for n := doc.FirstChild(); n != nil; n = n.NextSibling() {
+		if expression, ok := n.(*ast.Expression); ok {
+			v.Expression(expression)
+		}
+		if section, ok := n.(*ast.Section); ok {
+			for bn := section.FirstChild(); bn != nil; bn = bn.NextSibling() {
+				if nest, ok := bn.(*ast.Expression); ok {
+					v.Expression(nest)
+				}
+			}
+			v.Section(section)
+			continue
+		}
+		if comment, ok := n.(*ast.Comment); ok {
+			v.Comment(comment)
+		}
+	}
 }

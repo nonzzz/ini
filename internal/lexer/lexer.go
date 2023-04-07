@@ -96,7 +96,11 @@ func (lexer *lexer) Next() {
 				}
 				lexer.step()
 			}
-			lexer.literal = string(lexer.source[pos : lexer.pos-1])
+			if lexer.cp == -1 {
+				lexer.literal = string(lexer.source[pos:lexer.pos])
+			} else {
+				lexer.literal = string(lexer.source[pos : lexer.pos-1])
+			}
 			lexer.skipWhiteSpace()
 			if lexer.cp == '=' {
 				lexer.token = tokenizer.TKey

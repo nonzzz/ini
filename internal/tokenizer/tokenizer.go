@@ -18,6 +18,10 @@ var tokenToString = []string{
 	"SectionDeclaration",
 	"CommentDeclaration",
 	"ExpressionDeclaration",
+	"=",
+	"Key",
+	"Value",
+	"DocumentDeclaration",
 }
 
 func (t T) String() string {
