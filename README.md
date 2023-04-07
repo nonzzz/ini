@@ -6,7 +6,7 @@
 <a title="Codecov" target="_blank" href="https://codecov.io/gh/nonzzz/ini"><img src="https://img.shields.io/codecov/c/github/nonzzz/ini?style=flat-square&logo=codecov" /></a>
 </p>
 
-A simple ini parser write with golang.
+A simple standard ini parser with golang.
 
 ## Install
 
@@ -15,6 +15,13 @@ A simple ini parser write with golang.
 $ go get github.com/nonzzz/ini
 
 ```
+
+## Features
+
+- Read by file.
+- Read by string.
+- Marshal to Json or Map.
+- Support Accpect (visitor pattern).
 
 ## Usage
 
@@ -43,12 +50,48 @@ ini.Parse(txt)
 
 ```
 
-## API
+## Abstract syntax tree
 
-| Name        | Description               | Result                   |
-| ----------- | ------------------------- | ------------------------ |
-| Marshl2Map  | turn the ast tree to map  | `map[string]interface{}` |
-| Marshl2Json | turn the ast tree to json | `[]byte`                 |
+```
+
+Document {
+    Expression {
+        Type: "ExpressionDeclaration"
+        Key:  "expr1"
+        Value: "kanno"
+        Line:   0
+    }
+    Expression {
+        Type: "ExpressionDeclaration"
+        Key:  "expr2"
+        Value:  "golang"
+        Line: 1
+    }
+    Section {
+        Type: "SectionDeclaration"
+        Literal: "s1"
+        Line: 2
+        Expression {
+            Type: "ExpressionDeclaration"
+            Key: "expr"
+            Value: "123456"
+            Line: 3
+        }
+        Expression {
+            Type: "ExpressionDeclaration"
+            Key: "address"
+            Value: "127.0.0.1"
+            Line: 4
+        }
+    }
+    Comment {
+        Type: "CommentDeclaration"
+        Literal: "This is a address config"
+        Line: 4
+    }
+}
+
+```
 
 ## Acknowledgements
 
