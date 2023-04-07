@@ -2,38 +2,33 @@ package ini
 
 import (
 	"testing"
+
+	"github.com/nonzzz/ini/internal/test"
 )
 
-func TestJson(t *testing.T) {
-
-	txt := `
-	name = kanno
-	[node1]
-	a=1
-	b=2
-	c=3
-	#comment1
-	[node2]
-	a = 2
-	b = 4
-	c = 6
-	d= 8
-
-	;comment2
-	`
-	ini := New()
-	expected := `{"name":"kanno","node1":{"a":"1","b":"2","c":"3"},"node2":{"a":"2","b":"4","c":"6","d":"8"}}`
-	r := string(ini.Parse(txt).Marshl2Json())
-	if r != expected {
-		t.Fatalf("%s != %s", r, expected)
-	}
+func expectJson(t *testing.T, ini *Ini, expect string) {
+	t.Helper()
+	t.Run("expect Json", func(t *testing.T) {
+		test.AssertEqual(t, string(ini.Marshal2Json()), expect)
+	})
 }
 
-func TestLoad(t *testing.T) {
-	ini := New()
-	r := ini.LoadFile("./fixture.ini").Marshl2Json()
-	expected := `{"node1#123":{"a":"1","b":"2","c":"3","d":"4"},"node2#456":{}}`
-	if string(r) != expected {
-		t.Fatalf("%s != %s", r, expected)
-	}
+func TestParse(t *testing.T) {
+	fixture := `
+	 address = 127.0.0.1
+
+	 [info] #login info
+	 account = 123 #comment1
+	 password = 456 ; comment2
+	`
+
+	ini := New().Parse(fixture)
+	expect := `{"address":"127.0.0.1","info":{"account":"123","password":"456"}}`
+	expectJson(t, ini, expect)
+}
+
+func TestLoadFile(t *testing.T) {
+	ini := New().LoadFile("./fixture.ini")
+	expect := `{"node1#123":{"a":"1","b":"2","c":"3","d":"4"},"node2#456":{}}`
+	expectJson(t, ini, expect)
 }
