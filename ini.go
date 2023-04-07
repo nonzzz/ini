@@ -33,10 +33,46 @@ func New() *Ini {
 	return &Ini{}
 }
 
+func traverse(node ast.Node, v Visitor) {
+	traverseHelper(node, v)
+	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
+		traverse(child, v)
+	}
+}
+
+func traverseHelper(node interface{}, visitor Visitor) {
+	switch n := node.(type) {
+	case *ast.Section:
+		visitor.Section(n)
+	case *ast.Expression:
+		visitor.Expression(n)
+	case *ast.Comment:
+		visitor.Comment(n)
+	}
+}
+
 func (ini *Ini) Parse(input string) *Ini {
 	parser := parser.NewParser([]byte(input))
 	ini.document = parser.Document
 	return ini
+}
+
+type mapVisitor struct {
+	maps map[string]interface{}
+	IniVisitor
+}
+
+func (m *mapVisitor) Section(node *ast.Section) {
+	m.maps[node.Literal] = make(map[string]interface{})
+}
+
+func (m *mapVisitor) Expression(node *ast.Expression) {
+	if section, ok := node.Parent().(*ast.Section); ok {
+		m.maps[section.Literal].(map[string]interface{})[node.Key] = node.Value
+		return
+	}
+	m.maps[node.Key] = node.Value
+
 }
 
 func (ini *Ini) Marshal2Map() map[string]interface{} {
@@ -45,23 +81,12 @@ func (ini *Ini) Marshal2Map() map[string]interface{} {
 		return nil
 	}
 
-	maps := make(map[string]interface{})
-	for n := ini.document.FirstChild(); n != nil; n = n.NextSibling() {
-		if expression, ok := n.(*ast.Expression); ok {
-			maps[expression.Key] = expression.Value
-		}
-		if section, ok := n.(*ast.Section); ok {
-			sectionMap := make(map[string]interface{})
-			for bn := section.FirstChild(); bn != nil; bn = bn.NextSibling() {
-				if nest, ok := bn.(*ast.Expression); ok {
-					sectionMap[nest.Key] = nest.Value
-				}
-			}
-			maps[section.Literal] = sectionMap
-			continue
-		}
+	v := &mapVisitor{
+		maps: make(map[string]interface{}),
 	}
-	return maps
+
+	ini.Accept(v)
+	return v.maps
 }
 
 func (ini *Ini) Marshal2Json() []byte {
@@ -94,21 +119,5 @@ func (ini *Ini) Ast() *ast.Document {
 
 func (ini *Ini) Accept(v Visitor) {
 	doc := ini.document
-	for n := doc.FirstChild(); n != nil; n = n.NextSibling() {
-		if expression, ok := n.(*ast.Expression); ok {
-			v.Expression(expression)
-		}
-		if section, ok := n.(*ast.Section); ok {
-			for bn := section.FirstChild(); bn != nil; bn = bn.NextSibling() {
-				if nest, ok := bn.(*ast.Expression); ok {
-					v.Expression(nest)
-				}
-			}
-			v.Section(section)
-			continue
-		}
-		if comment, ok := n.(*ast.Comment); ok {
-			v.Comment(comment)
-		}
-	}
+	traverse(doc, v)
 }
