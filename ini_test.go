@@ -23,7 +23,7 @@ func TestParse(t *testing.T) {
 	`
 
 	ini := New().Parse(fixture)
-	expect := `{"address":"127.0.0.1","info":{"account":"123","password":"456"}}`
+	expect := `{"address":"127.0.0.1","info":{"account":"123 ","password":"456 "}}`
 	expectJson(t, ini, expect)
 }
 

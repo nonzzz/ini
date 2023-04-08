@@ -39,11 +39,6 @@ func (lexer *lexer) step() {
 		cp = -1
 	}
 
-	if cp == '\n' {
-		lexer.line++
-
-	}
-
 	lexer.cp = cp
 	lexer.pos += width
 }
@@ -59,6 +54,9 @@ func (lexer *lexer) Next() {
 			lexer.step()
 			continue
 		case '\r', '\n':
+			if lexer.cp == '\n' {
+				lexer.line++
+			}
 			lexer.step()
 			continue
 		case '[':
@@ -90,35 +88,33 @@ func (lexer *lexer) Next() {
 			lexer.token = tokenizer.TComment
 		default:
 			pos := lexer.pos - 1
+			space := 0
 			for {
-				if lexer.cp == '\n' || lexer.cp == '=' || lexer.cp == ';' || lexer.cp == '#' || lexer.cp == ' ' || lexer.cp == -1 || lexer.cp == '\r' {
+				if lexer.cp == '\n' || lexer.cp == '=' || lexer.cp == ';' || lexer.cp == '#' || lexer.cp == -1 || lexer.cp == '\r' {
 					break
 				}
+				if lexer.cp == ' ' || lexer.cp == '\t' {
+					space++
+				}
 				lexer.step()
+			}
+			if lexer.cp == '=' {
+				lexer.token = tokenizer.TKey
+			} else {
+				lexer.token = tokenizer.TValue
 			}
 			if lexer.cp == -1 {
 				lexer.literal = string(lexer.source[pos:lexer.pos])
 			} else {
+				if lexer.token == tokenizer.TKey {
+					lexer.literal = string(lexer.source[pos : lexer.pos-1-space])
+					return
+				}
 				lexer.literal = string(lexer.source[pos : lexer.pos-1])
 			}
-			lexer.skipWhiteSpace()
-			if lexer.cp == '=' {
-				lexer.token = tokenizer.TKey
-				return
-			}
-			lexer.token = tokenizer.TValue
-			return
+
 		}
 		return
-	}
-}
-
-func (lexer *lexer) skipWhiteSpace() {
-	for {
-		if lexer.cp != ' ' && lexer.cp != '\t' {
-			break
-		}
-		lexer.step()
 	}
 }
 

@@ -88,13 +88,39 @@ func TestCommentFollowVariable(t *testing.T) {
 	}{
 		{"a", tokenizer.TKey, 0},
 		{"=", tokenizer.TAssign, 0},
-		{"1", tokenizer.TValue, 0},
+		{"1 ", tokenizer.TValue, 0},
 		{"b", tokenizer.TKey, 1},
 		{"=", tokenizer.TAssign, 1},
 		{"2", tokenizer.TValue, 1},
 		{"999", tokenizer.TComment, 1},
 	}
 
+	l := Lexer([]byte(txt))
+	for _, tok := range expected {
+		test.AssertEqual(t, l.Literal(), tok.content)
+		test.AssertEqual(t, l.Line(), tok.line)
+		test.AssertEqual(t, l.Token(), tok.token)
+		l.Next()
+	}
+}
+
+func TestExpression(t *testing.T) {
+
+	txt := "a=1 2 3 45 \n [s1] b = 10"
+
+	expected := []struct {
+		content string
+		token   tokenizer.T
+		line    int
+	}{
+		{"a", tokenizer.TKey, 0},
+		{"=", tokenizer.TAssign, 0},
+		{"1 2 3 45 ", tokenizer.TValue, 0},
+		{"s1", tokenizer.TSection, 1},
+		{"b", tokenizer.TKey, 1},
+		{"=", tokenizer.TAssign, 1},
+		{"10", tokenizer.TValue, 1},
+	}
 	l := Lexer([]byte(txt))
 	for _, tok := range expected {
 		test.AssertEqual(t, l.Literal(), tok.content)
