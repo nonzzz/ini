@@ -29,13 +29,14 @@ func NewParser(input []byte) *Praser {
 		tok := p.lexer.Token()
 		literal := p.lexer.Literal()
 		line := p.lexer.Line()
+		loc := *p.lexer.Loc()
 		if tok == tokenizer.TSection {
-			currentSection = ast.NewSection(literal, line, tok)
+			currentSection = ast.NewSection(literal, line, tok, loc)
 			p.Document.AppendChild(p.Document, currentSection)
 		}
 
 		if tok == tokenizer.TKey {
-			expression = ast.NewExpression(literal, "", line, tokenizer.TExpression)
+			expression = ast.NewExpression(literal, "", line, tokenizer.TExpression, loc)
 		}
 
 		if tok == tokenizer.TValue && expression != nil {
@@ -48,7 +49,7 @@ func NewParser(input []byte) *Praser {
 		}
 
 		if tok == tokenizer.TComment {
-			p.Document.AppendChild(p.Document, ast.NewComment(literal, line, tok))
+			p.Document.AppendChild(p.Document, ast.NewComment(literal, line, tok, loc))
 		}
 		p.eat(tok)
 	}

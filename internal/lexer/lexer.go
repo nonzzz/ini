@@ -6,6 +6,15 @@ import (
 	"github.com/nonzzz/ini/internal/tokenizer"
 )
 
+type Location struct {
+	Start int32
+	Len   int32
+}
+
+func (l *Location) End() int32 {
+	return l.Start + l.Len
+}
+
 type lexer struct {
 	source  []byte
 	cp      rune
@@ -13,6 +22,7 @@ type lexer struct {
 	token   tokenizer.T
 	line    int
 	literal string
+	loc     Location
 }
 
 type Lexical interface {
@@ -20,6 +30,7 @@ type Lexical interface {
 	Token() tokenizer.T
 	Line() int
 	Literal() string
+	Loc() *Location
 }
 
 func Lexer(input []byte) *lexer {
@@ -69,6 +80,8 @@ func (lexer *lexer) Next() {
 			}
 			lexer.literal = string(lexer.source[pos : lexer.pos-1])
 			lexer.token = tokenizer.TSection
+			lexer.loc.Start = int32(pos)
+			lexer.loc.Len = int32(lexer.pos-1) - lexer.loc.Start
 		case ']':
 			lexer.step()
 			continue
@@ -85,6 +98,8 @@ func (lexer *lexer) Next() {
 				lexer.step()
 			}
 			lexer.literal = string(lexer.source[pos:lexer.pos])
+			lexer.loc.Start = int32(pos)
+			lexer.loc.Len = int32(lexer.pos) - lexer.loc.Start
 			lexer.token = tokenizer.TComment
 		default:
 			pos := lexer.pos - 1
@@ -108,11 +123,12 @@ func (lexer *lexer) Next() {
 			} else {
 				if lexer.token == tokenizer.TKey {
 					lexer.literal = string(lexer.source[pos : lexer.pos-1-space])
-					return
+				} else {
+					lexer.literal = string(lexer.source[pos : lexer.pos-1])
 				}
-				lexer.literal = string(lexer.source[pos : lexer.pos-1])
 			}
-
+			lexer.loc.Start = int32(pos)
+			lexer.loc.Len = int32(lexer.pos-1) - lexer.loc.Start
 		}
 		return
 	}
@@ -128,4 +144,8 @@ func (lexer *lexer) Line() int {
 
 func (lexer *lexer) Literal() string {
 	return lexer.literal
+}
+
+func (lexer *lexer) Loc() *Location {
+	return &lexer.loc
 }

@@ -1,11 +1,15 @@
 package ast
 
-import "github.com/nonzzz/ini/internal/tokenizer"
+import (
+	"github.com/nonzzz/ini/internal/lexer"
+	"github.com/nonzzz/ini/internal/tokenizer"
+)
 
 type property struct {
 	Type    tokenizer.T
 	Literal string
 	Line    int
+	Loc     lexer.Location
 }
 
 type expressionProperty struct {
@@ -13,6 +17,7 @@ type expressionProperty struct {
 	Key   string
 	Value string
 	Line  int
+	Loc   lexer.Location
 }
 
 type Node interface {
@@ -58,33 +63,35 @@ type Document struct {
 	BaseNode
 }
 
-func newNode(literal string, line int, tok tokenizer.T) property {
+func newNode(literal string, line int, tok tokenizer.T, loc lexer.Location) property {
 	return property{
 		Literal: literal,
 		Line:    line,
 		Type:    tok,
+		Loc:     loc,
 	}
 }
 
-func NewSection(literal string, line int, tok tokenizer.T) *Section {
+func NewSection(literal string, line int, tok tokenizer.T, loc lexer.Location) *Section {
 	return &Section{
-		property: newNode(literal, line, tok),
+		property: newNode(literal, line, tok, loc),
 	}
 }
 
-func NewComment(literal string, line int, tok tokenizer.T) *Comment {
+func NewComment(literal string, line int, tok tokenizer.T, loc lexer.Location) *Comment {
 	return &Comment{
-		property: newNode(literal, line, tok),
+		property: newNode(literal, line, tok, loc),
 	}
 }
 
-func NewExpression(key, value string, line int, tok tokenizer.T) *Expression {
+func NewExpression(key, value string, line int, tok tokenizer.T, loc lexer.Location) *Expression {
 	return &Expression{
 		expressionProperty: expressionProperty{
 			Key:   key,
 			Value: value,
 			Line:  line,
 			Type:  tok,
+			Loc:   loc,
 		},
 	}
 }
