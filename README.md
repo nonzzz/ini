@@ -93,6 +93,23 @@ Document {
 
 ```
 
+```go
+
+
+import "github.com/nonzzz/ini/pkg/ast"
+
+type visitor struct {
+    ini.IniVisitor
+}
+
+func (v *visitor) Section(node *ast.Section) {}
+
+func (v *visitor) Expression(node *ast.Expression) {}
+
+func (v *visitor) Comment(node *ast.Comment) {}
+
+```
+
 ## Acknowledgements
 
 Thanks to [JetBrains](https://www.jetbrains.com/) for allocating free open-source licences for IDEs.

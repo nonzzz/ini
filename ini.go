@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/nonzzz/ini/internal/ast"
 	"github.com/nonzzz/ini/internal/parser"
+	"github.com/nonzzz/ini/pkg/ast"
 )
 
 type Ini struct {

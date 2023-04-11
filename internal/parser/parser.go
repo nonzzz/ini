@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"github.com/nonzzz/ini/internal/ast"
 	"github.com/nonzzz/ini/internal/lexer"
 	"github.com/nonzzz/ini/internal/tokenizer"
+	"github.com/nonzzz/ini/pkg/ast"
 )
 
 type Praser struct {

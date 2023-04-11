@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/nonzzz/ini/internal/ast"
+	"github.com/nonzzz/ini/pkg/ast"
 )
 
 type visitor struct {
