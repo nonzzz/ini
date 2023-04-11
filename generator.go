@@ -1,61 +1,58 @@
 package ini
 
 import (
-	"sort"
+	"bytes"
 	"strings"
 
 	"github.com/nonzzz/ini/pkg/ast"
 )
 
 type visitor struct {
-	lines map[int]string
+	s [][]string
 	IniVisitor
 }
 
 func (v *visitor) Section(node *ast.Section) {
-	v.lines[node.Line] = "[" + node.Literal + "]"
+	if node.Line < len(v.s) {
+		v.s[node.Line] = append(v.s[node.Line], "["+node.Literal+"]")
+	}
 }
 
 func (v *visitor) Comment(node *ast.Comment) {
-	if node.PrevSibling() != nil {
-		switch prev := node.PrevSibling().(type) {
-		case *ast.Section:
-			if prev.Line == node.Line {
-				if s, ok := v.lines[node.Line]; ok {
-					v.lines[node.Line] = s + ";" + node.Literal
-				}
-			}
-		case *ast.Comment:
-			if s, ok := v.lines[node.Line]; ok {
-				v.lines[node.Line] = s + ";" + node.Literal
-			}
-		}
-	} else {
-		v.lines[node.Line] = ";" + node.Literal
+	if node.Line < len(v.s) {
+		v.s[node.Line] = append(v.s[node.Line], ";"+node.Literal)
 	}
 }
 
 func (v *visitor) Expression(node *ast.Expression) {
-	v.lines[node.Line] = node.Key + "=" + node.Value
+	if node.Line < len(v.s) {
+		v.s[node.Line] = append(v.s[node.Line], node.Key+" = "+node.Value)
+	}
 }
 
 func (ini *Ini) String() string {
 	if ini.document == nil {
 		return ""
 	}
-	v := &visitor{lines: make(map[int]string)}
-	ini.Accept(v)
-	lines := make([]int, 0, len(v.lines))
-	str := make([]string, 0, len(v.lines))
-	for k := range v.lines {
-		lines = append(lines, k)
-	}
-	sort.Ints(lines)
-	for _, i := range lines {
 
-		if s, ok := v.lines[i]; ok {
-			str = append(str, s)
+	// We preallocate a possible number of rows
+	s := make([][]string, ini.document.Line)
+
+	v := &visitor{
+		s: s,
+	}
+
+	ini.Accept(v)
+
+	var bf bytes.Buffer
+	for line, row := range v.s {
+		if len(row) > 0 {
+			bf.WriteString(strings.Join(row, " "))
+		}
+
+		if line > 0 && line < len(v.s)-1 {
+			bf.WriteString("\n")
 		}
 	}
-	return strings.Join(str, "\n")
+	return bf.String()
 }

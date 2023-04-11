@@ -1,6 +1,8 @@
 package ini
 
 import (
+	"bytes"
+	"os"
 	"testing"
 
 	"github.com/nonzzz/ini/internal/test"
@@ -31,4 +33,10 @@ func TestLoadFile(t *testing.T) {
 	ini := New().LoadFile("./fixture.ini")
 	expect := `{"node1#123":{"a":"1","b":"2","c":"3","d":"4"},"node2#456":{}}`
 	expectJson(t, ini, expect)
+}
+
+func TestStr(t *testing.T) {
+	ini := New().LoadFile("./str.ini")
+	expect, _ := os.ReadFile("./str.ini")
+	test.AssertEqual(t, bytes.Equal([]byte(ini.String()), expect), true)
 }

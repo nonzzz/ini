@@ -61,6 +61,7 @@ type Comment struct {
 
 type Document struct {
 	BaseNode
+	property
 }
 
 func newNode(literal string, line int, tok tokenizer.T, loc lexer.Location) property {

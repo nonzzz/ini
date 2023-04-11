@@ -24,6 +24,9 @@ func NewParser(input []byte) *Praser {
 
 	for {
 		if p.lexer.Token() == tokenizer.TEof {
+			p.Document.Type = tokenizer.TDocument
+			p.Document.Loc = *p.lexer.Loc()
+			p.Document.Line = p.lexer.Line() + 1
 			break
 		}
 		tok := p.lexer.Token()
