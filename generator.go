@@ -43,14 +43,15 @@ func (ini *Ini) String() string {
 	}
 
 	ini.Accept(v)
-
 	var bf bytes.Buffer
 	for line, row := range v.s {
+		if len(row) == 0 {
+			continue
+		}
 		if len(row) > 0 {
 			bf.WriteString(strings.Join(row, " "))
 		}
-
-		if line > 0 && line < len(v.s)-1 {
+		if line+1 < len(v.s) {
 			bf.WriteString("\n")
 		}
 	}

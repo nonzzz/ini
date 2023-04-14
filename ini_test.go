@@ -2,6 +2,7 @@ package ini
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"testing"
 
@@ -38,5 +39,12 @@ func TestLoadFile(t *testing.T) {
 func TestStr(t *testing.T) {
 	ini := New().LoadFile("./str.ini")
 	expect, _ := os.ReadFile("./str.ini")
+	fmt.Println(ini.String())
+	test.AssertEqual(t, bytes.Equal([]byte(ini.String()), expect), true)
+}
+
+func TestStr1(t *testing.T) {
+	ini := New().LoadFile("./str1.ini")
+	expect, _ := os.ReadFile("./str1.ini")
 	test.AssertEqual(t, bytes.Equal([]byte(ini.String()), expect), true)
 }
