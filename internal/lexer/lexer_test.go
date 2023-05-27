@@ -47,12 +47,12 @@ func TestStrings(t *testing.T) {
 		{"ident", "ident"},
 		{"[", "["},
 		{"]", "]"},
-		{";", ";"},
+		{";", ""},
 	}
 	for _, expr := range expected {
 		t.Run(expr.content, func(t *testing.T) {
 			_, text := lexToken(expr.content)
-			test.AssertEqual(t, text, expr.content)
+			test.AssertEqual(t, text, expr.text)
 		})
 	}
 }
