@@ -12,7 +12,6 @@ const endOfFile = -1
 const (
 	TIdent T = iota
 	TWhitesapce
-	TSection
 	TEqual
 	TOpenBrace
 	TCloseBrace
@@ -23,7 +22,6 @@ const (
 var tokenToString = []string{
 	"<ident-token>",
 	"<whitespace-token>",
-	"<section-token>",
 	"<=-token>",
 	"<[-token>",
 	"<]-token>",

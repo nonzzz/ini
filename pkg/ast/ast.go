@@ -2,22 +2,21 @@ package ast
 
 import (
 	"github.com/nonzzz/ini/internal/lexer"
-	"github.com/nonzzz/ini/internal/tokenizer"
 )
 
 type property struct {
-	Type    tokenizer.T
+	Type    lexer.T
 	Literal string
 	Line    int
-	Loc     lexer.Location
+	Loc     lexer.Loc
 }
 
 type expressionProperty struct {
-	Type  tokenizer.T
+	Type  lexer.T
 	Key   string
 	Value string
 	Line  int
-	Loc   lexer.Location
+	Loc   lexer.Loc
 }
 
 type Node interface {
@@ -64,7 +63,7 @@ type Document struct {
 	property
 }
 
-func newNode(literal string, line int, tok tokenizer.T, loc lexer.Location) property {
+func newNode(literal string, line int, tok lexer.T, loc lexer.Loc) property {
 	return property{
 		Literal: literal,
 		Line:    line,
@@ -73,19 +72,19 @@ func newNode(literal string, line int, tok tokenizer.T, loc lexer.Location) prop
 	}
 }
 
-func NewSection(literal string, line int, tok tokenizer.T, loc lexer.Location) *Section {
+func NewSection(literal string, line int, tok lexer.T, loc lexer.Loc) *Section {
 	return &Section{
 		property: newNode(literal, line, tok, loc),
 	}
 }
 
-func NewComment(literal string, line int, tok tokenizer.T, loc lexer.Location) *Comment {
+func NewComment(literal string, line int, tok lexer.T, loc lexer.Loc) *Comment {
 	return &Comment{
 		property: newNode(literal, line, tok, loc),
 	}
 }
 
-func NewExpression(key, value string, line int, tok tokenizer.T, loc lexer.Location) *Expression {
+func NewExpression(key, value string, line int, tok lexer.T, loc lexer.Loc) *Expression {
 	return &Expression{
 		expressionProperty: expressionProperty{
 			Key:   key,

@@ -52,7 +52,7 @@ func traverseHelper(node interface{}, visitor Visitor) {
 }
 
 func (ini *Ini) Parse(input string) *Ini {
-	parser := parser.NewParser([]byte(input))
+	parser := parser.Parser(input)
 	ini.document = parser.Document
 	return ini
 }
