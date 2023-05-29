@@ -48,10 +48,10 @@ loop:
 			expr := p.parseExpression()
 			document = append(document, expr)
 			continue
-		case lexer.TOpenBrace:
-			sec := p.parseSection()
-			document = append(document, sec)
-			continue
+			// case lexer.TOpenBrace:
+			// 	sec := p.parseSection()
+			// 	document = append(document, sec)
+			// 	continue
 		}
 	}
 
@@ -121,12 +121,20 @@ expr:
 			rs.WriteString(p.decoded())
 			p.advance()
 			continue
+		case lexer.TOpenBrace:
+			rs.WriteString(p.decoded())
+			p.advance()
+			continue
 		case lexer.TEqual:
 			rs.WriteString(p.decoded())
 			p.eat(lexer.TEqual)
 			continue
 		case lexer.TIdent:
 			rs.WriteString(p.decoded())
+			if p.at(p.start+1).Kind == lexer.TCloseBrace {
+				p.advance()
+				rs.WriteString(p.decoded())
+			}
 			break expr
 		}
 	}
@@ -137,38 +145,48 @@ expr:
 	return expr
 }
 
-func (p *parser) parseSection() (sec ast.Node) {
-	sec = ast.Node{
-		Type: ast.Sec,
-		Loc:  lexer.Loc{Start: p.current().Loc.Start},
-	}
-	rs := strings.Builder{}
-	rs.WriteString(p.decoded())
-	p.eat(lexer.TOpenBrace)
-sec:
-	for {
-		switch p.current().Kind {
-		case lexer.TEof:
-			break sec
-		case lexer.TWhitesapce:
-			rs.WriteString(p.decoded())
-			p.advance()
-			continue
-		case lexer.TCloseBrace:
-			sec.Loc.Len = p.current().Loc.End()
-			break sec
-		case lexer.TIdent:
-			if p.at(p.start+1).Kind == lexer.TCloseBrace {
-				rs.WriteString(p.decoded())
-				p.advance()
-				rs.WriteString(p.decoded())
-			} else {
-				sec.Nodes = append(sec.Nodes, p.parse()...)
-			}
-		default:
-			break sec
-		}
-	}
-	p.advance()
-	return sec
-}
+// func (p *parser) parseSection() (sec ast.Node) {
+// 	sec = ast.Node{
+// 		Type: ast.Sec,
+// 		Loc:  lexer.Loc{Start: p.current().Loc.Start},
+// 	}
+// 	rs := strings.Builder{}
+// 	rs.WriteString(p.decoded())
+// 	p.eat(lexer.TOpenBrace)
+// sec:
+// 	for {
+// 		switch p.current().Kind {
+// 		case lexer.TEof:
+// 			break sec
+// 		case lexer.TWhitesapce:
+// 			rs.WriteString(p.decoded())
+// 			p.advance()
+// 			continue
+// 		case lexer.TComment:
+// 			sec.Nodes = append(sec.Nodes, p.parse()...)
+// 			p.advance()
+// 			continue
+// 		case lexer.TCloseBrace:
+// 			rs.WriteString(p.decoded())
+// 			p.advance()
+// 			continue
+// 		case lexer.TIdent:
+// 			if p.at(p.start+1).Kind == lexer.TCloseBrace {
+// 				rs.WriteString(p.decoded())
+// 				p.advance()
+// 			} else {
+// 				sec.Nodes = append(sec.Nodes, p.parse()...)
+// 				return sec
+// 			}
+// 		default:
+// 			if p.current().Kind == lexer.TOpenBrace {
+// 				return sec
+// 			}
+// 			break sec
+// 		}
+// 	}
+// 	sec.Text = rs.String()
+// 	sec.Loc.Len = p.current().Loc.End()
+// 	p.advance()
+// 	return sec
+// }

@@ -140,9 +140,6 @@ func (lexer *lexer) next() {
 			lexer.step()
 			lexer.token.Kind = TEqual
 		default:
-			// if IsAlphaNumericDash(lexer.cp) {
-
-			// }
 			lexer.token.Kind = lexer.consumeIdent()
 		}
 		return //nolint
@@ -151,7 +148,7 @@ func (lexer *lexer) next() {
 
 func (lexer *lexer) consumeComments() {
 	for {
-		if lexer.cp == -1 || lexer.cp == '\n' {
+		if lexer.cp == -1 || isNewLine(lexer.cp) {
 			break
 		}
 		lexer.step()
@@ -160,7 +157,7 @@ func (lexer *lexer) consumeComments() {
 
 func (lexer *lexer) consumeIdent() T {
 	for {
-		if lexer.cp == -1 || lexer.cp == '=' || isNewLine(lexer.cp) || isComment(lexer.cp) {
+		if lexer.cp == -1 || lexer.cp == '=' || isNewLine(lexer.cp) || isComment(lexer.cp) || lexer.cp == '[' || lexer.cp == ']' {
 			break
 		}
 		lexer.step()
