@@ -142,7 +142,7 @@ func (lexer *lexer) next() {
 		default:
 			lexer.token.Kind = lexer.consumeIdent()
 		}
-		return //nolint
+		return
 	}
 }
 
