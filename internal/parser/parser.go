@@ -1,132 +1,174 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/nonzzz/ini/internal/lexer"
 	"github.com/nonzzz/ini/pkg/ast"
 )
 
 type parser struct {
-	input    string
-	start    int
-	end      int
-	tokens   []lexer.Token
-	Document *ast.Document
+	input  string
+	start  int
+	end    int
+	tokens []lexer.Token
 }
 
-func Parser(input string) *parser {
+func Parser(input string) *ast.Node {
 	tokens := lexer.Tokenizer(input)
 	p := &parser{
-		input:    input,
-		end:      len(tokens),
-		tokens:   tokens,
-		Document: ast.NewDocument(),
+		input:  input,
+		end:    len(tokens),
+		tokens: tokens,
 	}
-	p.parse()
-	return p
+	document := p.parse()
+	return &ast.Node{
+		Type:  ast.Doc,
+		Loc:   lexer.Loc{Start: 0, Len: p.current().Loc.End()},
+		Nodes: document,
+	}
 }
 
-func (parser *parser) parse() {
+func (p *parser) parse() []ast.Node {
+
+	var document []ast.Node
+loop:
 	for {
-		switch parser.current().Kind {
+		switch p.current().Kind {
 		case lexer.TEof:
-			break
+			break loop
 		case lexer.TWhitesapce:
-			parser.advance()
+			p.advance()
+			continue
+		case lexer.TComment:
+			document = append(document, ast.Node{Type: ast.Comment, Loc: p.current().Loc, Text: p.decoded()})
+			p.advance()
 			continue
 		case lexer.TIdent:
-			//
-		case lexer.TComment:
-			//
+			expr := p.parseExpression()
+			document = append(document, expr)
+			continue
+		case lexer.TOpenBrace:
+			sec := p.parseSection()
+			document = append(document, sec)
+			continue
 		}
 	}
 
+	return document
 }
 
-// func (parser *parser) equal(kind lexer.T) {
-// 	//
-// }
-
-func (parser *parser) current() lexer.Token {
-	return parser.at(parser.start)
+func (p *parser) current() lexer.Token {
+	return p.at(p.start)
 }
 
-func (parser *parser) at(pos int) lexer.Token {
-	if pos < parser.end {
-		return parser.tokens[pos]
+func (p *parser) at(pos int) lexer.Token {
+	if pos < p.end {
+		return p.tokens[pos]
 	}
-	if parser.end < len(parser.tokens) {
+	if p.end < len(p.tokens) {
 		return lexer.Token{
 			Kind: lexer.TEof,
-			Loc:  parser.tokens[parser.end].Loc,
+			Loc:  p.tokens[p.end].Loc,
 		}
 	}
 	return lexer.Token{
 		Kind: lexer.TEof,
-		Loc:  lexer.Loc{Start: int32(len(parser.input))},
+		Loc:  lexer.Loc{Start: int32(len(p.input))},
 	}
 }
 
-func (parser *parser) advance() {
-	if parser.start < parser.end {
-		parser.start++
+func (p *parser) advance() {
+	if p.start < p.end {
+		p.start++
 	}
 }
 
-func (parser *parser) eat(kind lexer.T) {
-	//
+func (p *parser) peek(kind lexer.T) bool {
+	return kind == p.current().Kind
 }
 
-// func NewParser(input []byte) *Praser {
+func (p *parser) eat(kind lexer.T) bool {
+	if p.peek(kind) {
+		p.advance()
+		return true
+	}
+	return false
+}
 
-// 	p := &Praser{
-// 		lexer:    lexer.Lexer(input),
-// 		Document: ast.NewDocument(),
-// 	}
+func (p *parser) decoded() string {
+	return p.current().DecodedText(p.input)
+}
 
-// 	var currentSection *ast.Section
+func (p *parser) parseExpression() (expr ast.Node) {
+	expr = ast.Node{
+		Type: ast.Expr,
+		Loc:  lexer.Loc{Start: p.current().Loc.Start},
+	}
 
-// 	var expression *ast.Expression
+	rs := strings.Builder{}
+	rs.WriteString(p.decoded())
 
-// 	for {
-// 		if p.lexer.Token() == tokenizer.TEof {
-// 			p.Document.Type = tokenizer.TDocument
-// 			p.Document.Loc = *p.lexer.Loc()
-// 			p.Document.Line = p.lexer.Line() + 1
-// 			break
-// 		}
-// 		tok := p.lexer.Token()
-// 		literal := p.lexer.Literal()
-// 		line := p.lexer.Line()
-// 		loc := *p.lexer.Loc()
-// 		if tok == tokenizer.TSection {
-// 			currentSection = ast.NewSection(literal, line, tok, loc)
-// 			p.Document.AppendChild(p.Document, currentSection)
-// 		}
+	p.advance()
 
-// 		if tok == tokenizer.TKey {
-// 			expression = ast.NewExpression(literal, "", line, tokenizer.TExpression, loc)
-// 		}
+expr:
+	for {
+		switch p.current().Kind {
 
-// 		if tok == tokenizer.TValue && expression != nil {
-// 			expression.Value = literal
-// 			if currentSection != nil {
-// 				currentSection.AppendChild(currentSection, expression)
-// 			} else {
-// 				p.Document.AppendChild(p.Document, expression)
-// 			}
-// 		}
+		case lexer.TEof:
+			break expr
+		case lexer.TWhitesapce:
+			rs.WriteString(p.decoded())
+			p.advance()
+			continue
+		case lexer.TEqual:
+			rs.WriteString(p.decoded())
+			p.eat(lexer.TEqual)
+			continue
+		case lexer.TIdent:
+			rs.WriteString(p.decoded())
+			break expr
+		}
+	}
 
-// 		if tok == tokenizer.TComment {
-// 			p.Document.AppendChild(p.Document, ast.NewComment(literal, line, tok, loc))
-// 		}
-// 		p.eat(tok)
-// 	}
-// 	return p
-// }
+	expr.Text = rs.String()
+	expr.Loc.Len = p.current().Loc.End()
+	p.advance()
+	return expr
+}
 
-// func (parser *Praser) eat(token tokenizer.T) {
-// 	if parser.lexer.Token() == token {
-// 		parser.lexer.Next()
-// 		return
-// 	}
-// }
+func (p *parser) parseSection() (sec ast.Node) {
+	sec = ast.Node{
+		Type: ast.Sec,
+		Loc:  lexer.Loc{Start: p.current().Loc.Start},
+	}
+	rs := strings.Builder{}
+	rs.WriteString(p.decoded())
+	p.eat(lexer.TOpenBrace)
+sec:
+	for {
+		switch p.current().Kind {
+		case lexer.TEof:
+			break sec
+		case lexer.TWhitesapce:
+			rs.WriteString(p.decoded())
+			p.advance()
+			continue
+		case lexer.TCloseBrace:
+			sec.Loc.Len = p.current().Loc.End()
+			break sec
+		case lexer.TIdent:
+			if p.at(p.start+1).Kind == lexer.TCloseBrace {
+				rs.WriteString(p.decoded())
+				p.advance()
+				rs.WriteString(p.decoded())
+			} else {
+				sec.Nodes = append(sec.Nodes, p.parse()...)
+			}
+		default:
+			break sec
+		}
+	}
+	p.advance()
+	return sec
+}

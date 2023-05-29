@@ -140,9 +140,10 @@ func (lexer *lexer) next() {
 			lexer.step()
 			lexer.token.Kind = TEqual
 		default:
-			if IsAlphaNumericDash(lexer.cp) {
-				lexer.token.Kind = lexer.consumeIdent()
-			}
+			// if IsAlphaNumericDash(lexer.cp) {
+
+			// }
+			lexer.token.Kind = lexer.consumeIdent()
 		}
 		return //nolint
 	}
