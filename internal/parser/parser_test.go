@@ -39,9 +39,10 @@ func TestExpressionWithComment(t *testing.T) {
 }
 
 func TestSection(t *testing.T) {
-	input := "[s1];This is a section \r\n node1 = 123 \n node2 = [127.0.0.1] \r\n [s2] \n [s3] #This is a section \n s = 1"
+	input := "[s1];This is a section \r\n node1 = 123 \n node2 = [127.0.0.1] \r\n [s2] \n [s3] #This is a section2 \n s = 1"
 	p := Parser(input)
 	n := p.Nodes
 	test.AssertEqual(t, len(n), 3)
 	test.AssertEqual(t, len(n[0].Nodes), 3)
+	test.AssertEqual(t, n[0].Nodes[0].Text, "This is a section ")
 }

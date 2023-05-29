@@ -12,6 +12,8 @@ type parser struct {
 	start  int
 	end    int
 	tokens []lexer.Token
+	secPos int
+	hasSec bool
 }
 
 func Parser(input string) *ast.Node {
@@ -41,19 +43,30 @@ loop:
 			p.advance()
 			continue
 		case lexer.TComment:
-			document = append(document, ast.Node{Type: ast.Comment, Loc: p.current().Loc, Text: p.decoded()})
+			if p.hasSec {
+				document[p.secPos].Nodes = append(document[p.secPos].Nodes, ast.Node{Type: ast.Comment, Loc: p.current().Loc, Text: p.decoded()})
+			} else {
+				document = append(document, ast.Node{Type: ast.Comment, Loc: p.current().Loc, Text: p.decoded()})
+			}
 			p.advance()
 			continue
 		case lexer.TIdent:
 			// The token type is <ident-token> must be an expression
 			// Because parseExpression will consume all tokens until the next <ident-token>
 			expr := p.parseExpression()
-			document = append(document, expr)
+			if p.hasSec {
+				document[p.secPos].Nodes = append(document[p.secPos].Nodes, expr)
+			} else {
+				document = append(document, expr)
+			}
 			continue
 		case lexer.TOpenBrace:
 			sec := p.parseSection()
 			document = append(document, sec)
+			p.secPos = len(document) - 1
 			continue
+		default:
+			break loop
 		}
 	}
 
@@ -135,9 +148,10 @@ loop:
 			if p.at(p.start+1).Kind == lexer.TCloseBrace {
 				p.advance()
 				rs.WriteString(p.decoded())
-			}
-			if p.at(p.start+1).Kind == lexer.TComment {
+			} else if p.at(p.start+1).Kind == lexer.TComment {
 				expr.Nodes = append(expr.Nodes, ast.Node{Type: ast.Comment, Loc: p.current().Loc, Text: p.decoded()})
+				p.advance()
+			} else {
 				p.advance()
 			}
 			break loop
@@ -151,96 +165,23 @@ loop:
 }
 
 func (p *parser) parseSection() (sec ast.Node) {
+	p.hasSec = false
 	sec = ast.Node{
 		Type: ast.Sec,
 		Loc:  lexer.Loc{Start: p.current().Loc.Start},
 	}
 	rs := strings.Builder{}
 	rs.WriteString(p.decoded())
-	// eat current token then turn the loop to consume all
-	// tokens until the next token is <[-token>
-	p.eat(lexer.TOpenBrace)
+	for p.current().Kind != lexer.TCloseBrace {
+		if p.current().Kind == lexer.TEof {
+			break
+		}
+		p.eat(p.current().Kind)
+		rs.WriteString(p.decoded())
+	}
+	sec.Text = rs.String()
+	sec.Loc.Len = p.current().Loc.End()
+	p.advance()
+	p.hasSec = true
 	return sec
-	// loop:
-	// 	for {
-	// 		switch p.current().Kind {
-	// 		case lexer.TOpenBrace:
-	// 			break loop
-	// 		case lexer.TCloseBrace:
-	// 			rs.WriteString(p.decoded())
-	// 			break loop
-	// 		case lexer.TWhitesapce:
-	// 			p.advance()
-	// 			continue
-	// 		case lexer.TIdent:
-	// 			if p.eat(p.current().Kind) {
-	// 				rs.WriteString(p.decoded())
-	// 				if p.at(p.start+1).Kind == lexer.TCloseBrace {
-	// 					// section is end
-	// 					break loop
-	// 				} else {
-	// 					// parseExpression
-	// 					// save the parse result to sec.Nodes
-	// 					sec.Nodes = append(sec.Nodes, p.parseExpression())
-	// 				}
-	// 			}
-	// 		case lexer.TComment:
-	// 			sec.Nodes = append(sec.Nodes, ast.Node{Type: ast.Comment, Loc: p.current().Loc, Text: p.decoded()})
-	// 			p.advance()
-	// 			continue
-	// 		default:
-	// 			break loop
-	// 		}
-
-	// }
-	// sec.Text = rs.String()
-	// sec.Loc.Len = p.current().Loc.End()
-	// p.advance()
-	// return sec
 }
-
-// func (p *parser) parseSection() (sec ast.Node) {
-// 	sec = ast.Node{
-// 		Type: ast.Sec,
-// 		Loc:  lexer.Loc{Start: p.current().Loc.Start},
-// 	}
-// 	rs := strings.Builder{}
-// 	rs.WriteString(p.decoded())
-// 	p.eat(lexer.TOpenBrace)
-// sec:
-// 	for {
-// 		switch p.current().Kind {
-// 		case lexer.TEof:
-// 			break sec
-// 		case lexer.TWhitesapce:
-// 			rs.WriteString(p.decoded())
-// 			p.advance()
-// 			continue
-// 		case lexer.TComment:
-// 			sec.Nodes = append(sec.Nodes, p.parse()...)
-// 			p.advance()
-// 			continue
-// 		case lexer.TCloseBrace:
-// 			rs.WriteString(p.decoded())
-// 			p.advance()
-// 			continue
-// 		case lexer.TIdent:
-// 			if p.at(p.start+1).Kind == lexer.TCloseBrace {
-// 				rs.WriteString(p.decoded())
-// 				p.advance()
-// 			} else {
-// 				sec.Nodes = append(sec.Nodes, p.parse()...)
-// 				return sec
-// 			}
-// 		default:
-// 			if p.current().Kind == lexer.TOpenBrace {
-// 				return sec
-// 			}
-// 			break sec
-// 		}
-// 	}
-// 	sec.Text = rs.String()
-// 	sec.Loc.Len = p.current().Loc.End()
-// 	p.advance()
-// 	return sec
-// }
