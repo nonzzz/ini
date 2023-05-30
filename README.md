@@ -54,41 +54,23 @@ ini.Parse(txt)
 
 ```
 
-Document {
-    Expression {
-        Type: "ExpressionDeclaration"
-        Key:  "expr1"
-        Value: "kanno"
-        Line:   0
+Node {
+    Type: doc,
+    Nodes: [
+        Node {
+            Type: section
+            Nodes: []
+        },
+        Node {
+            Type: section
+            Nodes: []
+        },
+    ]
+    Loc: {
+        Start: 0,
+        Len: 0,
     }
-    Expression {
-        Type: "ExpressionDeclaration"
-        Key:  "expr2"
-        Value:  "golang"
-        Line: 1
-    }
-    Section {
-        Type: "SectionDeclaration"
-        Literal: "s1"
-        Line: 2
-        Expression {
-            Type: "ExpressionDeclaration"
-            Key: "expr"
-            Value: "123456"
-            Line: 3
-        }
-        Expression {
-            Type: "ExpressionDeclaration"
-            Key: "address"
-            Value: "127.0.0.1"
-            Line: 4
-        }
-    }
-    Comment {
-        Type: "CommentDeclaration"
-        Literal: "This is a address config"
-        Line: 4
-    }
+
 }
 
 ```

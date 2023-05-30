@@ -139,20 +139,29 @@ loop:
 			rs.WriteString(p.decoded())
 			p.advance()
 			continue
+		case lexer.TCloseBrace:
+			rs.WriteString(p.decoded())
+			if p.at(p.start+1).Kind == lexer.TComment {
+				p.advance()
+				continue
+			}
+			break loop
 		case lexer.TEqual:
 			rs.WriteString(p.decoded())
 			p.eat(lexer.TEqual)
 			continue
+		case lexer.TComment:
+			expr.Nodes = append(expr.Nodes, ast.Node{Type: ast.Comment, Loc: p.current().Loc, Text: p.decoded()})
+			break loop
 		case lexer.TIdent:
 			rs.WriteString(p.decoded())
+			if p.at(p.start+1).Kind == lexer.TComment {
+				p.advance()
+				continue
+			}
 			if p.at(p.start+1).Kind == lexer.TCloseBrace {
 				p.advance()
-				rs.WriteString(p.decoded())
-			} else if p.at(p.start+1).Kind == lexer.TComment {
-				expr.Nodes = append(expr.Nodes, ast.Node{Type: ast.Comment, Loc: p.current().Loc, Text: p.decoded()})
-				p.advance()
-			} else {
-				p.advance()
+				continue
 			}
 			break loop
 		}

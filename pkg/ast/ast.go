@@ -1,10 +1,8 @@
 package ast
 
-import "github.com/nonzzz/ini/internal/lexer"
-
-// import (
-// 	"github.com/nonzzz/ini/internal/lexer"
-// )
+import (
+	"github.com/nonzzz/ini/internal/lexer"
+)
 
 type N uint8
 
@@ -31,4 +29,17 @@ type Node struct {
 	Nodes []Node
 	Loc   lexer.Loc
 	Text  string
+}
+
+type Walker func(node *Node)
+
+func walkImpl(node *Node, walker Walker) {
+	walker(node)
+	for i := range node.Nodes {
+		walkImpl(&node.Nodes[i], walker)
+	}
+}
+
+func Walk(node *Node, walker Walker) {
+	walkImpl(node, walker)
 }
