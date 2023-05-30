@@ -65,22 +65,24 @@ type Token struct {
 
 func (token Token) DecodedText(s string) string {
 	raw := s[token.Loc.Start:token.Loc.End()]
-	switch token.Kind {
-	case TComment:
-		return raw[1:]
-	}
 	return raw
 }
 
 type lexer struct {
-	source string
-	pos    int
-	cp     rune
-	token  Token
+	source     string
+	pos        int
+	cp         rune
+	token      Token
+	approxLine int
+}
+
+type TokenizeResult struct {
+	Tokens     []Token
+	ApproxLine int
 }
 
 // process stream token
-func Tokenizer(input string) []Token {
+func Tokenizer(input string) TokenizeResult {
 	l := &lexer{
 		source: input,
 	}
@@ -91,13 +93,20 @@ func Tokenizer(input string) []Token {
 		tokens = append(tokens, l.token)
 		l.next()
 	}
-	return tokens
+	return TokenizeResult{
+		Tokens:     tokens,
+		ApproxLine: l.approxLine,
+	}
 }
 
 func (lexer *lexer) step() {
 	cp, width := utf8.DecodeRuneInString(lexer.source[lexer.pos:])
 	if width == 0 {
 		cp = -1
+	}
+
+	if cp == '\n' {
+		lexer.approxLine++
 	}
 
 	lexer.cp = cp

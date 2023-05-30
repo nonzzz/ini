@@ -8,32 +8,38 @@ import (
 )
 
 type parser struct {
-	input  string
-	start  int
-	end    int
-	tokens []lexer.Token
-	secPos int
-	hasSec bool
+	input      string
+	start      int
+	end        int
+	tokens     []lexer.Token
+	secPos     int
+	hasSec     bool
+	approxLine int
 }
 
-func Parser(input string) *ast.Node {
-	tokens := lexer.Tokenizer(input)
+func Parser(input string) *ast.Document {
+	result := lexer.Tokenizer(input)
+
 	p := &parser{
-		input:  input,
-		end:    len(tokens),
-		tokens: tokens,
+		input:      input,
+		end:        len(result.Tokens),
+		tokens:     result.Tokens,
+		approxLine: result.ApproxLine,
 	}
 	document := p.parse()
-	return &ast.Node{
-		Type:  ast.Doc,
-		Loc:   lexer.Loc{Start: 0, Len: p.current().Loc.End()},
-		Nodes: document,
-	}
+	doc := &ast.Document{}
+	doc.Type = ast.Doc
+	doc.Loc = lexer.Loc{Start: 0, Len: p.current().Loc.End()}
+	doc.Nodes = document
+
+	return doc
+
 }
 
 func (p *parser) parse() []ast.Node {
 
-	var document []ast.Node
+	// It's just a pre-allocation.
+	var document []ast.Node = make([]ast.Node, 0, p.approxLine)
 loop:
 	for {
 		switch p.current().Kind {
@@ -43,10 +49,15 @@ loop:
 			p.advance()
 			continue
 		case lexer.TComment:
+			comment := &ast.CommentNode{}
+			comment.Type = ast.Comment
+			comment.Loc = p.current().Loc
+			comment.Text = p.decoded()
+			comment.Comma = comment.Text[0:1]
 			if p.hasSec {
-				document[p.secPos].Nodes = append(document[p.secPos].Nodes, ast.Node{Type: ast.Comment, Loc: p.current().Loc, Text: p.decoded()})
+				document[p.secPos].(*ast.SectionNode).Nodes = append(document[p.secPos].(*ast.SectionNode).Nodes, comment)
 			} else {
-				document = append(document, ast.Node{Type: ast.Comment, Loc: p.current().Loc, Text: p.decoded()})
+				document = append(document, comment)
 			}
 			p.advance()
 			continue
@@ -55,7 +66,7 @@ loop:
 			// Because parseExpression will consume all tokens until the next <ident-token>
 			expr := p.parseExpression()
 			if p.hasSec {
-				document[p.secPos].Nodes = append(document[p.secPos].Nodes, expr)
+				document[p.secPos].(*ast.SectionNode).Nodes = append(document[p.secPos].(*ast.SectionNode).Nodes, expr)
 			} else {
 				document = append(document, expr)
 			}
@@ -115,15 +126,15 @@ func (p *parser) decoded() string {
 	return p.current().DecodedText(p.input)
 }
 
-func (p *parser) parseExpression() (expr ast.Node) {
-	expr = ast.Node{
-		Type: ast.Expr,
-		Loc:  lexer.Loc{Start: p.current().Loc.Start},
-	}
-
+func (p *parser) parseExpression() (expr *ast.ExpressionNode) {
+	expr = &ast.ExpressionNode{}
+	expr.Type = ast.Expr
+	expr.Loc = lexer.Loc{Start: p.current().Loc.Start}
+	// Becasue it's hard to modify the lexer.the sapce are removed here
+	expr.Key = strings.TrimSpace(p.decoded())
 	rs := strings.Builder{}
+	v := strings.Builder{}
 	rs.WriteString(p.decoded())
-
 	p.advance()
 
 loop:
@@ -131,16 +142,14 @@ loop:
 		switch p.current().Kind {
 		case lexer.TEof:
 			break loop
-		case lexer.TWhitesapce:
+		case lexer.TWhitesapce, lexer.TOpenBrace:
 			rs.WriteString(p.decoded())
-			p.advance()
-			continue
-		case lexer.TOpenBrace:
-			rs.WriteString(p.decoded())
+			v.WriteString(p.decoded())
 			p.advance()
 			continue
 		case lexer.TCloseBrace:
 			rs.WriteString(p.decoded())
+			v.WriteString(p.decoded())
 			if p.at(p.start+1).Kind == lexer.TComment {
 				p.advance()
 				continue
@@ -151,10 +160,16 @@ loop:
 			p.eat(lexer.TEqual)
 			continue
 		case lexer.TComment:
-			expr.Nodes = append(expr.Nodes, ast.Node{Type: ast.Comment, Loc: p.current().Loc, Text: p.decoded()})
+			comment := &ast.CommentNode{}
+			comment.Type = ast.Comment
+			comment.Loc = p.current().Loc
+			comment.Text = p.decoded()
+			comment.Comma = comment.Text[0:1]
+			expr.Nodes = append(expr.Nodes, comment)
 			break loop
 		case lexer.TIdent:
 			rs.WriteString(p.decoded())
+			v.WriteString(p.decoded())
 			if p.at(p.start+1).Kind == lexer.TComment {
 				p.advance()
 				continue
@@ -169,26 +184,31 @@ loop:
 
 	expr.Text = rs.String()
 	expr.Loc.Len = p.current().Loc.End()
+	expr.Value = v.String()
 	p.advance()
 	return expr
 }
 
-func (p *parser) parseSection() (sec ast.Node) {
+func (p *parser) parseSection() (sec *ast.SectionNode) {
 	p.hasSec = false
-	sec = ast.Node{
-		Type: ast.Sec,
-		Loc:  lexer.Loc{Start: p.current().Loc.Start},
-	}
+	sec = &ast.SectionNode{}
+	sec.Type = ast.Sec
+	sec.Loc = lexer.Loc{Start: p.current().Loc.Start}
 	rs := strings.Builder{}
+	v := strings.Builder{}
 	rs.WriteString(p.decoded())
 	for p.current().Kind != lexer.TCloseBrace {
 		if p.current().Kind == lexer.TEof {
 			break
 		}
 		p.eat(p.current().Kind)
+		if p.current().Kind != lexer.TCloseBrace {
+			v.WriteString(p.decoded())
+		}
 		rs.WriteString(p.decoded())
 	}
 	sec.Text = rs.String()
+	sec.Name = v.String()
 	sec.Loc.Len = p.current().Loc.End()
 	p.advance()
 	p.hasSec = true

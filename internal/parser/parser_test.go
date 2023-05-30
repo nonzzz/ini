@@ -12,17 +12,17 @@ func TestExpression(t *testing.T) {
 
 	p := Parser(input)
 	n := p.Nodes
-	test.AssertEqual(t, n[0].Text, "a  = 123")
-	test.AssertEqual(t, n[1].Text, "b=[127.0.0.1,192.168.1]")
+	test.AssertEqual(t, n[0].(*ast.ExpressionNode).Text, "a  = 123")
+	test.AssertEqual(t, n[1].(*ast.ExpressionNode).Text, "b=[127.0.0.1,192.168.1]")
 }
 
 func TestComment(t *testing.T) {
 	input := "#comment1 \r\n ;#comment2  \n #    comment3"
 	p := Parser(input)
 	n := p.Nodes
-	test.AssertEqual(t, n[0].Text, "comment1 ")
-	test.AssertEqual(t, n[1].Text, "#comment2  ")
-	test.AssertEqual(t, n[2].Text, "    comment3")
+	test.AssertEqual(t, n[0].(*ast.CommentNode).Text, "#comment1 ")
+	test.AssertEqual(t, n[1].(*ast.CommentNode).Text, ";#comment2  ")
+	test.AssertEqual(t, n[2].(*ast.CommentNode).Text, "#    comment3")
 }
 
 func TestExpressionWithComment(t *testing.T) {
@@ -31,11 +31,11 @@ func TestExpressionWithComment(t *testing.T) {
 	p := Parser(input)
 	n := p.Nodes
 	test.AssertEqual(t, len(n), 3)
-	test.AssertEqual(t, n[0].Text, "a  = 123 ")
-	test.AssertEqual(t, n[0].Nodes[0].Type, ast.Comment)
-	test.AssertEqual(t, n[1].Text, "b=[127.0.0.1,192.168.1]")
-	test.AssertEqual(t, n[1].Nodes[0].Type, ast.Comment)
-	test.AssertEqual(t, n[2].Text, " single line comment")
+	test.AssertEqual(t, n[0].(*ast.ExpressionNode).Text, "a  = 123 ")
+	test.AssertEqual(t, n[0].(*ast.ExpressionNode).Nodes[0].(*ast.CommentNode).Type, ast.Comment)
+	test.AssertEqual(t, n[1].(*ast.ExpressionNode).Text, "b=[127.0.0.1,192.168.1]")
+	test.AssertEqual(t, n[1].(*ast.ExpressionNode).Nodes[0].(*ast.CommentNode).Type, ast.Comment)
+	test.AssertEqual(t, n[2].(*ast.CommentNode).Text, "; single line comment")
 }
 
 func TestSection(t *testing.T) {
@@ -43,6 +43,6 @@ func TestSection(t *testing.T) {
 	p := Parser(input)
 	n := p.Nodes
 	test.AssertEqual(t, len(n), 3)
-	test.AssertEqual(t, len(n[0].Nodes), 3)
-	test.AssertEqual(t, n[0].Nodes[0].Text, "This is a section ")
+	test.AssertEqual(t, len(n[0].(*ast.SectionNode).Nodes), 3)
+	test.AssertEqual(t, n[0].(*ast.SectionNode).Nodes[0].(*ast.CommentNode).Text, ";This is a section ")
 }

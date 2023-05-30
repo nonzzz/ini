@@ -7,7 +7,7 @@ import (
 )
 
 func lexToken(input string) (T, string) {
-	tokens := Tokenizer(input)
+	tokens := Tokenizer(input).Tokens
 	if len(tokens) > 0 {
 		return tokens[0].Kind, tokens[0].DecodedText(input)
 	}
@@ -47,7 +47,7 @@ func TestStrings(t *testing.T) {
 		{"ident", "ident"},
 		{"[", "["},
 		{"]", "]"},
-		{";", ""},
+		{";", ";"},
 	}
 	for _, expr := range expected {
 		t.Run(expr.content, func(t *testing.T) {
@@ -60,7 +60,7 @@ func TestStrings(t *testing.T) {
 func expectComment(t *testing.T, input string, expect string) {
 	t.Helper()
 	t.Run(input, func(t *testing.T) {
-		tok := Tokenizer(input)
+		tok := Tokenizer(input).Tokens
 		if len(tok) > 0 {
 			test.AssertEqual(t, tok[0].DecodedText(input), expect)
 		}
@@ -68,17 +68,17 @@ func expectComment(t *testing.T, input string, expect string) {
 }
 
 func TestComment(t *testing.T) {
-	expectComment(t, ";123456", "123456")
-	expectComment(t, "#456789", "456789")
-	expectComment(t, "# 1 2 3 4", " 1 2 3 4")
-	expectComment(t, "; 1 2 3 4", " 1 2 3 4")
-	expectComment(t, "#;1111", ";1111")
+	expectComment(t, ";123456", ";123456")
+	expectComment(t, "#456789", "#456789")
+	expectComment(t, "# 1 2 3 4", "# 1 2 3 4")
+	expectComment(t, "; 1 2 3 4", "; 1 2 3 4")
+	expectComment(t, "#;1111", "#;1111")
 }
 
 func expectMultipleComment(t *testing.T, input string, expect string) {
 	t.Helper()
 	t.Run(input, func(t *testing.T) {
-		tok := Tokenizer(input)
+		tok := Tokenizer(input).Tokens
 		if len(tok) > 0 {
 			test.AssertEqual(t, tok[1].DecodedText(input), expect)
 		}
@@ -86,8 +86,8 @@ func expectMultipleComment(t *testing.T, input string, expect string) {
 }
 
 func TestMultipleComment(t *testing.T) {
-	expectMultipleComment(t, ";123\n# 456", " 456")
-	expectMultipleComment(t, ";123\n#; 456", "; 456")
+	expectMultipleComment(t, ";123\n# 456", "# 456")
+	expectMultipleComment(t, ";123\n#; 456", "#; 456")
 }
 
 func TestExpression(t *testing.T) {
@@ -101,9 +101,9 @@ func TestExpression(t *testing.T) {
 		{"a", TIdent},
 		{"=", TEqual},
 		{"1 2 3 45 ", TIdent},
-		{"   comment", TComment},
+		{"#   comment", TComment},
 	}
-	tok := Tokenizer(input)
+	tok := Tokenizer(input).Tokens
 	for i, expr := range expected {
 		test.AssertEqual(t, tok[i].DecodedText(input), expr.content)
 		test.AssertEqual(t, tok[i].Kind, expr.token)
