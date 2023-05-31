@@ -9,7 +9,7 @@ import (
 
 func TestWalker(t *testing.T) {
 	i, _ := New().LoadFile("./str.ini")
-	i.Walk(func(node ast.Node) {
+	i.Walk(func(node ast.Node, _ ast.Node) {
 		switch t := node.(type) {
 		case *ast.SectionNode:
 			if t.Name == "s2" {

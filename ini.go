@@ -41,7 +41,7 @@ func (i *Ini) Marshal2Map() map[string]interface{} {
 
 	currentSection := ""
 
-	i.Walk(func(node ast.Node) {
+	i.Walk(func(node ast.Node, _ ast.Node) {
 		switch t := node.(type) {
 		case *ast.SectionNode:
 			currentSection = t.Name

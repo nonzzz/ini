@@ -54,14 +54,14 @@ ini.Parse(txt)
 
 ```
 
-Node {
+DocumentNode {
     Type: doc,
     Nodes: [
-        Node {
+        ExpressionNode {
             Type: section
             Nodes: []
         },
-        Node {
+        SectionNode {
             Type: section
             Nodes: []
         },
@@ -75,23 +75,6 @@ Node {
 
 ```
 
-```go
-
-
-import "github.com/nonzzz/ini/pkg/ast"
-
-type visitor struct {
-    ini.IniVisitor
-}
-
-func (v *visitor) Section(node *ast.Section) {}
-
-func (v *visitor) Expression(node *ast.Expression) {}
-
-func (v *visitor) Comment(node *ast.Comment) {}
-
-```
-
 ## Acknowledgements
 
 Thanks to [JetBrains](https://www.jetbrains.com/) for allocating free open-source licences for IDEs.
@@ -100,6 +83,13 @@ Thanks to [JetBrains](https://www.jetbrains.com/) for allocating free open-sourc
 <img width="250px" height="250px"  src="https://resources.jetbrains.com/storage/products/company/brand/logos/GoLand_icon.png" alt="GoLand logo.">
 </p>
 
+
+## Author
+
+Kanno
+
 ## LICENSE
 
 [MIT](LICENSE)
+
+

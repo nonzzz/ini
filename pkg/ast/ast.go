@@ -54,30 +54,30 @@ type CommentNode struct {
 	Comma string
 }
 
-type Walker func(node Node)
+type Walker func(node, parentNode Node)
 
-func walkImpl(node Node, walker Walker) {
-	walker(node)
+func walkImpl(node Node, parentNode Node, walker Walker) {
+	walker(node, parentNode)
 	switch t := node.(type) {
 	case *Document:
 		for _, c := range t.Nodes {
-			walkImpl(c, walker)
+			walkImpl(c, t, walker)
 		}
 	case *SectionNode:
 		for _, c := range t.Nodes {
-			walkImpl(c, walker)
+			walkImpl(c, t, walker)
 		}
 	case *CommentNode:
 		for _, c := range t.Nodes {
-			walkImpl(c, walker)
+			walkImpl(c, t, walker)
 		}
 	case *ExpressionNode:
 		for _, c := range t.Nodes {
-			walkImpl(c, walker)
+			walkImpl(c, t, walker)
 		}
 	}
 }
 
 func Walk(node Node, walker Walker) {
-	walkImpl(node, walker)
+	walkImpl(node, nil, walker)
 }
