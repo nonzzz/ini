@@ -1,151 +1,175 @@
 package lexer
 
 import (
+	"unicode"
 	"unicode/utf8"
-
-	"github.com/nonzzz/ini/internal/tokenizer"
 )
 
-type Location struct {
+type T uint8
+
+const endOfFile = -1
+
+const (
+	TIdent T = iota
+	TWhitesapce
+	TEqual
+	TOpenBrace
+	TCloseBrace
+	TComment
+	TEof
+)
+
+var tokenToString = []string{
+	"<ident-token>",
+	"<whitespace-token>",
+	"<=-token>",
+	"<[-token>",
+	"<]-token>",
+	"<comment-token>",
+	"<eof-token>",
+}
+
+func (t T) String() string {
+	return tokenToString[t]
+}
+
+func isWhiteSpace(s rune) bool {
+	return s == ' ' || s == '\t'
+}
+
+func isComment(s rune) bool {
+	return s == ';' || s == '#'
+}
+
+func isNewLine(s rune) bool {
+	return s == '\n' || s == '\r' || s == '\f'
+}
+
+func IsAlphaNumericDash(s rune) bool {
+	return unicode.IsLetter(s) || unicode.IsDigit(s) || s == '_' || s == '-'
+}
+
+type Loc struct {
 	Start int32
 	Len   int32
 }
 
-func (l *Location) End() int32 {
-	return l.Start + l.Len
+func (loc Loc) End() int32 {
+	return loc.Start + loc.Len
+}
+
+type Token struct {
+	Kind T
+	Loc  Loc
+}
+
+func (token Token) DecodedText(s string) string {
+	raw := s[token.Loc.Start:token.Loc.End()]
+	return raw
 }
 
 type lexer struct {
-	source  []byte
-	cp      rune
-	pos     int
-	token   tokenizer.T
-	line    int
-	literal string
-	loc     Location
+	source     string
+	pos        int
+	cp         rune
+	token      Token
+	approxLine int
 }
 
-type Lexical interface {
-	Next()
-	Token() tokenizer.T
-	Line() int
-	Literal() string
-	Loc() *Location
+type TokenizeResult struct {
+	Tokens     []Token
+	ApproxLine int
 }
 
-func Lexer(input []byte) *lexer {
+// process stream token
+func Tokenizer(input string) TokenizeResult {
 	l := &lexer{
 		source: input,
 	}
+	var tokens []Token
 	l.step()
-	l.Next()
-	return l
+	l.next()
+	for l.token.Kind != TEof {
+		tokens = append(tokens, l.token)
+		l.next()
+	}
+	return TokenizeResult{
+		Tokens:     tokens,
+		ApproxLine: l.approxLine,
+	}
 }
 
 func (lexer *lexer) step() {
-
-	cp, width := utf8.DecodeRune(lexer.source[lexer.pos:])
-
+	cp, width := utf8.DecodeRuneInString(lexer.source[lexer.pos:])
 	if width == 0 {
 		cp = -1
 	}
 
+	if cp == '\n' {
+		lexer.approxLine++
+	}
+
 	lexer.cp = cp
+	lexer.token.Loc.Len = int32(lexer.pos) - lexer.token.Loc.Start
 	lexer.pos += width
 }
 
-func (lexer *lexer) Next() {
-
+func (lexer *lexer) next() {
 	for {
-		lexer.token = 0
+		lexer.token = Token{Loc: Loc{Start: lexer.token.Loc.End()}}
 		switch lexer.cp {
-		case -1:
-			lexer.token = tokenizer.TEof
+		case endOfFile:
+			lexer.token.Kind = TEof
 		case ' ', '\t':
 			lexer.step()
-			continue
-		case '\r', '\n':
-			if lexer.cp == '\n' {
-				lexer.line++
+			for {
+				if !isWhiteSpace(lexer.cp) {
+					break
+				}
+				lexer.step()
+			}
+			lexer.token.Kind = TWhitesapce
+		case '\r', '\n', '\f':
+			if lexer.cp == '\r' {
+				lexer.step()
 			}
 			lexer.step()
 			continue
 		case '[':
-			pos := lexer.pos
-			for {
-				if lexer.cp == ']' {
-					break
-				}
-				lexer.step()
-			}
-			lexer.literal = string(lexer.source[pos : lexer.pos-1])
-			lexer.token = tokenizer.TSection
-			lexer.loc.Start = int32(pos)
-			lexer.loc.Len = int32(lexer.pos-1) - lexer.loc.Start
+			lexer.step()
+			lexer.token.Kind = TOpenBrace
 		case ']':
 			lexer.step()
-			continue
-		case '=':
-			lexer.literal = "="
-			lexer.token = tokenizer.TAssign
-			lexer.step()
+			lexer.token.Kind = TCloseBrace
 		case '#', ';':
-			pos := lexer.pos
-			for {
-				if lexer.cp == '\n' || lexer.cp == -1 {
-					break
-				}
-				lexer.step()
-			}
-			lexer.literal = string(lexer.source[pos:lexer.pos])
-			lexer.loc.Start = int32(pos)
-			lexer.loc.Len = int32(lexer.pos) - lexer.loc.Start
-			lexer.token = tokenizer.TComment
+			lexer.step()
+			lexer.consumeComments()
+			lexer.token.Kind = TComment
+		case '=':
+			lexer.step()
+			lexer.token.Kind = TEqual
 		default:
-			pos := lexer.pos - 1
-			space := 0
-			for {
-				if lexer.cp == '\n' || lexer.cp == '=' || lexer.cp == ';' || lexer.cp == '#' || lexer.cp == -1 || lexer.cp == '\r' {
-					break
-				}
-				if lexer.cp == ' ' || lexer.cp == '\t' {
-					space++
-				}
-				lexer.step()
-			}
-			if lexer.cp == '=' {
-				lexer.token = tokenizer.TKey
-			} else {
-				lexer.token = tokenizer.TValue
-			}
-			if lexer.cp == -1 {
-				lexer.literal = string(lexer.source[pos:lexer.pos])
-			} else {
-				if lexer.token == tokenizer.TKey {
-					lexer.literal = string(lexer.source[pos : lexer.pos-1-space])
-				} else {
-					lexer.literal = string(lexer.source[pos : lexer.pos-1])
-				}
-			}
-			lexer.loc.Start = int32(pos)
-			lexer.loc.Len = int32(lexer.pos-1) - lexer.loc.Start
+			lexer.token.Kind = lexer.consumeIdent()
 		}
 		return
 	}
 }
 
-func (lexer *lexer) Token() tokenizer.T {
-	return lexer.token
+func (lexer *lexer) consumeComments() {
+	for {
+		if lexer.cp == -1 || isNewLine(lexer.cp) {
+			break
+		}
+		lexer.step()
+	}
 }
 
-func (lexer *lexer) Line() int {
-	return lexer.line
-}
-
-func (lexer *lexer) Literal() string {
-	return lexer.literal
-}
-
-func (lexer *lexer) Loc() *Location {
-	return &lexer.loc
+func (lexer *lexer) consumeIdent() T {
+	for {
+		if lexer.cp == -1 || lexer.cp == '=' || isNewLine(lexer.cp) || isComment(lexer.cp) || lexer.cp == '[' || lexer.cp == ']' {
+			break
+		}
+		lexer.step()
+	}
+	return TIdent
 }

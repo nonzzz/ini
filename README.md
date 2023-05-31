@@ -54,59 +54,24 @@ ini.Parse(txt)
 
 ```
 
-Document {
-    Expression {
-        Type: "ExpressionDeclaration"
-        Key:  "expr1"
-        Value: "kanno"
-        Line:   0
+DocumentNode {
+    Type: doc,
+    Nodes: [
+        ExpressionNode {
+            Type: section
+            Nodes: []
+        },
+        SectionNode {
+            Type: section
+            Nodes: []
+        },
+    ]
+    Loc: {
+        Start: 0,
+        Len: 0,
     }
-    Expression {
-        Type: "ExpressionDeclaration"
-        Key:  "expr2"
-        Value:  "golang"
-        Line: 1
-    }
-    Section {
-        Type: "SectionDeclaration"
-        Literal: "s1"
-        Line: 2
-        Expression {
-            Type: "ExpressionDeclaration"
-            Key: "expr"
-            Value: "123456"
-            Line: 3
-        }
-        Expression {
-            Type: "ExpressionDeclaration"
-            Key: "address"
-            Value: "127.0.0.1"
-            Line: 4
-        }
-    }
-    Comment {
-        Type: "CommentDeclaration"
-        Literal: "This is a address config"
-        Line: 4
-    }
+
 }
-
-```
-
-```go
-
-
-import "github.com/nonzzz/ini/pkg/ast"
-
-type visitor struct {
-    ini.IniVisitor
-}
-
-func (v *visitor) Section(node *ast.Section) {}
-
-func (v *visitor) Expression(node *ast.Expression) {}
-
-func (v *visitor) Comment(node *ast.Comment) {}
 
 ```
 
@@ -118,6 +83,13 @@ Thanks to [JetBrains](https://www.jetbrains.com/) for allocating free open-sourc
 <img width="250px" height="250px"  src="https://resources.jetbrains.com/storage/products/company/brand/logos/GoLand_icon.png" alt="GoLand logo.">
 </p>
 
+
+## Author
+
+Kanno
+
 ## LICENSE
 
 [MIT](LICENSE)
+
+
