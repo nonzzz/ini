@@ -1,110 +1,81 @@
 package printer
 
-import (
-	"fmt"
-	"strings"
-
-	"github.com/nonzzz/ini/pkg/ast"
-)
-
-// Ini printer
+import "github.com/nonzzz/ini/pkg/ast"
 
 type printer struct {
-	rs             []string
-	currentSecPos  int
-	currentExprPos int
+	code []byte
 }
 
-func (p *printer) printExpression(node *ast.ExpressionNode, parent ast.Node) {
-	switch parent.(type) {
-	case *ast.Document:
-		if len(node.Nodes) > 0 {
-			switch node.Nodes[0].(type) {
-			case *ast.CommentNode:
-				p.rs = append(p.rs, node.Text)
-			default:
-				p.rs = append(p.rs, fmt.Sprintf("%s\r\n", node.Text))
-			}
-		} else {
-			p.rs = append(p.rs, fmt.Sprintf("%s\r\n", node.Text))
-		}
-
-		p.currentExprPos = len(p.rs) - 1
-	case *ast.SectionNode:
-		s := strings.Builder{}
-		s.WriteString(p.rs[p.currentSecPos])
-		if len(node.Nodes) > 0 {
-			switch node.Nodes[0].(type) {
-			case *ast.CommentNode:
-				s.WriteString(node.Text)
-			default:
-				s.WriteString(node.Text)
-				s.WriteString("\r\n")
-			}
-		} else {
-			s.WriteString(node.Text)
-			s.WriteString("\r\n")
-		}
-		p.rs[p.currentSecPos] = s.String()
-	}
+func (p *printer) printNewLine() {
+	p.print("\r\n")
 }
 
-func (p *printer) printSection(node *ast.SectionNode) {
+func (p *printer) print(text string) {
+	p.code = append(p.code, text...)
+}
+
+func (p *printer) expression(node *ast.ExpressionNode) {
+
 	if len(node.Nodes) > 0 {
-		switch node.Nodes[0].(type) {
-		case *ast.CommentNode:
-			p.rs = append(p.rs, fmt.Sprintf("[%s]", node.Name))
-		default:
-			p.rs = append(p.rs, fmt.Sprintf("[%s]\r\n", node.Name))
+		p.print(node.Key)
+		p.print(" ")
+		p.print("=")
+		p.print(node.Value)
+		for _, child := range node.Nodes {
+			switch c := child.(type) {
+			case *ast.CommentNode:
+				p.comment(c)
+			}
 		}
-	} else {
-		p.rs = append(p.rs, fmt.Sprintf("[%s]\r\n", node.Name))
+		return
 	}
-	p.currentSecPos = len(p.rs) - 1
+	p.print(node.Key)
+	p.print(" ")
+	p.print("=")
+	p.print(node.Value)
+	p.printNewLine()
 }
 
-func (p *printer) printComment(node *ast.CommentNode, parent ast.Node) {
-	s := strings.Builder{}
-	switch parent.(type) {
-	case *ast.ExpressionNode:
-		if p.currentSecPos != -1 {
-			s.WriteString(p.rs[p.currentSecPos])
-			s.WriteString(node.Text)
-			s.WriteString("\r\n")
-			p.rs[p.currentSecPos] = s.String()
-		} else {
-			s.WriteString(p.rs[p.currentExprPos])
-			s.WriteString(node.Text)
-			s.WriteString("\r\n")
-			p.rs[p.currentExprPos] = s.String()
-		}
+func (p *printer) comment(node *ast.CommentNode) {
+	p.print(node.Text)
+	p.printNewLine()
+}
 
-	case *ast.SectionNode:
-		s.WriteString(p.rs[p.currentSecPos])
-		s.WriteString(node.Text)
-		s.WriteString("\r\n")
-		p.rs[p.currentSecPos] = s.String()
-	case *ast.Document:
-		p.rs = append(p.rs, fmt.Sprintf("%s\r\n", node.Text))
+func (p *printer) section(node *ast.SectionNode) {
+	if len(node.Nodes) > 0 {
+		p.print("[")
+		p.print(node.Name)
+		p.print("]")
+		for i, child := range node.Nodes {
+			switch c := child.(type) {
+			case *ast.ExpressionNode:
+				if i == 0 {
+					p.printNewLine()
+				}
+				p.expression(c)
+			case *ast.CommentNode:
+				p.comment(c)
+			}
+		}
+		return
 	}
+	p.print("[")
+	p.print(node.Name)
+	p.print("]")
+	p.printNewLine()
 }
 
 func Printer(tree *ast.Document) string {
-	p := printer{
-		currentSecPos:  -1,
-		currentExprPos: -1,
-	}
-	ast.Walk(tree, func(node, parentNode ast.Node) {
-		switch t := node.(type) {
-		case *ast.CommentNode:
-			p.printComment(t, parentNode)
-		case *ast.ExpressionNode:
-			p.printExpression(t, parentNode)
+	p := printer{}
+	for _, node := range tree.Nodes {
+		switch n := node.(type) {
 		case *ast.SectionNode:
-			p.printSection(t)
-
+			p.section(n)
+		case *ast.CommentNode:
+			p.comment(n)
+		case *ast.ExpressionNode:
+			p.expression(n)
 		}
-	})
-
-	return strings.Join(p.rs, "")
+	}
+	return string(p.code)
 }
