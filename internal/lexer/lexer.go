@@ -49,9 +49,11 @@ func IsAlphaNumericDash(s rune) bool {
 	return unicode.IsLetter(s) || unicode.IsDigit(s) || s == '_' || s == '-'
 }
 
+// This is a mem friendly implement.
 type Loc struct {
-	Start int32
-	Len   int32
+	Start  int32
+	Len    int32
+	Column int32
 }
 
 func (loc Loc) End() int32 {
@@ -116,7 +118,7 @@ func (lexer *lexer) step() {
 
 func (lexer *lexer) next() {
 	for {
-		lexer.token = Token{Loc: Loc{Start: lexer.token.Loc.End()}}
+		lexer.token = Token{Loc: Loc{Start: lexer.token.Loc.End(), Column: int32(lexer.approxLine)}}
 		switch lexer.cp {
 		case endOfFile:
 			lexer.token.Kind = TEof

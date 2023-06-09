@@ -129,14 +129,12 @@ func (p *parser) decoded() string {
 func (p *parser) parseExpression() (expr *ast.ExpressionNode) {
 	expr = &ast.ExpressionNode{}
 	expr.Type = ast.Expr
-	expr.Loc = lexer.Loc{Start: p.current().Loc.Start}
-	// Becasue it's hard to modify the lexer.the sapce are removed here
+	expr.Loc = p.current().Loc
 	expr.Key = strings.TrimSpace(p.decoded())
 	rs := strings.Builder{}
 	v := strings.Builder{}
 	rs.WriteString(p.decoded())
 	p.advance()
-
 loop:
 	for {
 		switch p.current().Kind {
@@ -170,15 +168,11 @@ loop:
 		case lexer.TIdent:
 			rs.WriteString(p.decoded())
 			v.WriteString(p.decoded())
-			if p.at(p.start+1).Kind == lexer.TComment {
-				p.advance()
-				continue
+			if p.at(p.start+1).Loc.Column != expr.Loc.Column {
+				break loop
 			}
-			if p.at(p.start+1).Kind == lexer.TCloseBrace {
-				p.advance()
-				continue
-			}
-			break loop
+			p.advance()
+			continue
 		}
 	}
 
@@ -193,7 +187,7 @@ func (p *parser) parseSection() (sec *ast.SectionNode) {
 	p.hasSec = false
 	sec = &ast.SectionNode{}
 	sec.Type = ast.Sec
-	sec.Loc = lexer.Loc{Start: p.current().Loc.Start}
+	sec.Loc = p.current().Loc
 	rs := strings.Builder{}
 	v := strings.Builder{}
 	rs.WriteString(p.decoded())
