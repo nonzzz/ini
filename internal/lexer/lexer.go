@@ -1,7 +1,6 @@
 package lexer
 
 import (
-	"unicode"
 	"unicode/utf8"
 )
 
@@ -43,10 +42,6 @@ func isComment(s rune) bool {
 
 func isNewLine(s rune) bool {
 	return s == '\n' || s == '\r' || s == '\f'
-}
-
-func IsAlphaNumericDash(s rune) bool {
-	return unicode.IsLetter(s) || unicode.IsDigit(s) || s == '_' || s == '-'
 }
 
 // This is a mem friendly implement.

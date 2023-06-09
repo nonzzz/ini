@@ -21,6 +21,6 @@ func BenchmarkIniPrinter(b *testing.B) {
 	s := string(input)
 
 	for i := 0; i < b.N; i++ {
-		New().Parse(s).Printer()
+		New().Parse(s).Printer() // nolint
 	}
 }
