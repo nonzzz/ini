@@ -85,6 +85,11 @@ func Tokenizer(input string) TokenizeResult {
 	}
 	var tokens []Token
 	l.step()
+	// The U+FEFf character is usually a zero-width non-breaking space.
+	// However, ini file don't treat U+FEFF is whitespace.
+	if l.cp == '\uFEFF' {
+		l.step()
+	}
 	l.next()
 	for l.token.Kind != TEof {
 		tokens = append(tokens, l.token)
