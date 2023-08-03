@@ -3,8 +3,8 @@ package parser
 import (
 	"strings"
 
+	"github.com/nonzzz/ini/internal/ast"
 	"github.com/nonzzz/ini/internal/lexer"
-	"github.com/nonzzz/ini/pkg/ast"
 )
 
 type parser struct {
@@ -17,7 +17,7 @@ type parser struct {
 	approxLine int
 }
 
-func Parser(input string) *ast.Document {
+func Parser(input string) *ast.Node {
 	result := lexer.Tokenizer(input)
 
 	p := &parser{
@@ -26,13 +26,11 @@ func Parser(input string) *ast.Document {
 		tokens:     result.Tokens,
 		approxLine: result.ApproxLine,
 	}
-	document := p.parse()
-	doc := &ast.Document{}
-	doc.Type = ast.Doc
-	doc.Loc = lexer.Loc{Start: 0, Len: p.current().Loc.End()}
-	doc.Nodes = document
 
-	return doc
+	p.parse()
+	document := ast.NewNode(ast.KDocument)
+	document.Loc = lexer.Loc{Start: 0, Len: p.current().Loc.End()}
+	return document
 
 }
 
@@ -49,32 +47,34 @@ loop:
 			p.advance()
 			continue
 		case lexer.TComment:
-			comment := &ast.CommentNode{}
-			comment.Type = ast.Comment
-			comment.Loc = p.current().Loc
-			comment.Text = p.decoded()
-			comment.Comma = comment.Text[0:1]
-			if p.hasSec {
-				document[p.secPos].(*ast.SectionNode).Nodes = append(document[p.secPos].(*ast.SectionNode).Nodes, comment)
-			} else {
-				document = append(document, comment)
-			}
+			// comment := &ast.CommentNode{}
+			// comment.Type = ast.Comment
+			// comment.Loc = p.current().Loc
+			// comment.Text = p.decoded()
+			// comment.Comma = comment.Text[0:1]
+			// if p.hasSec {
+			// 	document[p.secPos].(*ast.SectionNode).Nodes = append(document[p.secPos].(*ast.SectionNode).Nodes, comment)
+			// } else {
+			// 	document = append(document, comment)
+			// }
 			p.advance()
 			continue
 		case lexer.TIdent:
 			// The token type is <ident-token> must be an expression
 			// Because parseExpression will consume all tokens until the next <ident-token>
-			expr := p.parseExpression()
-			if p.hasSec {
-				document[p.secPos].(*ast.SectionNode).Nodes = append(document[p.secPos].(*ast.SectionNode).Nodes, expr)
-			} else {
-				document = append(document, expr)
-			}
+			// expr := p.parseExpression()
+			// if p.hasSec {
+			// 	document[p.secPos].(*ast.SectionNode).Nodes = append(document[p.secPos].(*ast.SectionNode).Nodes, expr)
+			// } else {
+			// 	document = append(document, expr)
+			// }
 			continue
 		case lexer.TOpenBrace:
-			sec := p.parseSection()
-			document = append(document, sec)
-			p.secPos = len(document) - 1
+			p.eat(lexer.TOpenBrace)
+			p.parseSection()
+			// sec := p.parseSection()
+			// document = append(document, sec)
+			// p.secPos = len(document) - 1
 			continue
 		default:
 			break loop
@@ -183,28 +183,45 @@ loop:
 	return expr
 }
 
-func (p *parser) parseSection() (sec *ast.SectionNode) {
-	p.hasSec = false
-	sec = &ast.SectionNode{}
-	sec.Type = ast.Sec
-	sec.Loc = p.current().Loc
-	rs := strings.Builder{}
-	v := strings.Builder{}
-	rs.WriteString(p.decoded())
-	for p.current().Kind != lexer.TCloseBrace {
-		if p.current().Kind == lexer.TEof {
+func (p *parser) parseSection() (sec *ast.Node) {
+
+	var sb strings.Builder
+	prev := p.current().Loc.Column
+	node := ast.NewNode(ast.KSection)
+	node.Loc.Start = p.current().Loc.Start
+
+	for {
+		if p.current().Loc.Column != prev ||
+			p.current().Kind == lexer.TEof ||
+			p.current().Kind == lexer.TComment {
 			break
 		}
-		p.eat(p.current().Kind)
-		if p.current().Kind != lexer.TCloseBrace {
-			v.WriteString(p.decoded())
-		}
-		rs.WriteString(p.decoded())
+		sb.WriteString(p.decoded())
+		p.advance()
 	}
-	sec.Text = rs.String()
-	sec.Name = v.String()
-	sec.Loc.Len = p.current().Loc.End()
-	p.advance()
-	p.hasSec = true
-	return sec
+
+	// p.hasSec = false
+	// sec = &ast.SectionNode{}
+	// sec.Type = ast.Sec
+	// sec.Loc = p.current().Loc
+	// rs := strings.Builder{}
+	// v := strings.Builder{}
+	// rs.WriteString(p.decoded())
+	// for p.current().Kind != lexer.TCloseBrace {
+	// 	if p.current().Kind == lexer.TEof {
+	// 		break
+	// 	}
+	// 	p.eat(p.current().Kind)
+	// 	if p.current().Kind != lexer.TCloseBrace {
+	// 		v.WriteString(p.decoded())
+	// 	}
+	// 	rs.WriteString(p.decoded())
+	// }
+	// sec.Text = rs.String()
+	// sec.Name = v.String()
+	// sec.Loc.Len = p.current().Loc.End()
+	// p.advance()
+	// p.hasSec = true
+	// return sec
+
 }

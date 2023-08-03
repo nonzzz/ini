@@ -1,5 +1,7 @@
 package ast
 
+import "github.com/nonzzz/ini/internal/lexer"
+
 type K uint8
 
 const (
@@ -41,6 +43,7 @@ type Node struct {
 	key      string
 	value    string
 	Text     string
+	Loc      lexer.Loc
 }
 
 func (n *Node) Kind() K {
@@ -71,4 +74,10 @@ func (n *Node) Attribute() Attribute {
 
 func (n *Node) AppendChild(node Element) {
 	n.children = append(n.children, node)
+}
+
+func NewNode(kind K) *Node {
+	return &Node{
+		kind: kind,
+	}
 }
