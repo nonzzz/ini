@@ -161,19 +161,22 @@ func (p *parser) parseComment() *ast.Node {
 func (p *parser) convertSection() *ast.Node {
 
 	var sb strings.Builder
+	sb.WriteString("[")
 	node := ast.NewNode(ast.KSection)
 	loc := p.current().Loc
-
 	for {
 		if p.current().Loc.Column != loc.Column ||
 			p.current().Kind == lexer.TEof ||
 			p.current().Kind == lexer.TCloseBrace {
+			if p.current().Kind == lexer.TCloseBrace {
+				sb.WriteString("]")
+				p.advance()
+			}
 			break
 		}
 		sb.WriteString(p.decoded())
 		p.advance()
 	}
-
 	for {
 		if p.at(p.start+1).Kind == lexer.TCloseBrace && p.current().Loc.Column == loc.Column {
 			sb.WriteString(p.decoded())
@@ -190,6 +193,9 @@ func (p *parser) convertSection() *ast.Node {
 			"id":   s[1 : len(s)-1],
 			"loc":  lexer.Loc{Start: loc.Start, Column: loc.Column, Len: p.current().Loc.End()},
 		})
+		for p.current().Kind == lexer.TWhitesapce {
+			p.advance()
+		}
 		if p.current().Kind == lexer.TComment {
 			node.AppendChild(p.parseComment())
 			p.advance()
@@ -197,13 +203,20 @@ func (p *parser) convertSection() *ast.Node {
 	nesetd:
 		for {
 			switch p.current().Kind {
-			case lexer.TComment:
+			case lexer.TWhitesapce:
+				p.advance()
+				continue
+			case lexer.TOpenBrace:
+				break nesetd
+			case lexer.TIdent:
+				node.AppendChild(p.parseExpression())
+				p.advance()
+			default:
 				break nesetd
 			}
 
 		}
-		// nested := p.parseExpression()
-		// node.AppendChilden(nested)
+		return node
 	}
 	return nil
 }

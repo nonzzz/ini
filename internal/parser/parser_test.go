@@ -43,11 +43,18 @@ func TestExpressionWithComment(t *testing.T) {
 	test.AssertEqual(t, children[2].Kind(), ast.KComment)
 }
 
-// func TestSection(t *testing.T) {
-// 	input := "[s1];This is a section \r\n node1 = 123 \n node2 = [127.0.0.1] \r\n [s2] \n [s3] #This is a section2 \n s = 1"
-// 	p := Parser(input)
-// 	n := p.Nodes
-// 	test.AssertEqual(t, len(n), 3)
-// 	test.AssertEqual(t, len(n[0].(*ast.SectionNode).Nodes), 3)
-// 	test.AssertEqual(t, n[0].(*ast.SectionNode).Nodes[0].(*ast.CommentNode).Text, ";This is a section ")
-// }
+func TestSection(t *testing.T) {
+	input := "[s1];This is a section \r\n node1 = 123 \n node2 = [127.0.0.1] \r\n [s2] \n [s3] #This is a section2 \n s = 1"
+	p := Parser(input)
+	children := p.Children()
+	test.AssertEqual(t, p.ChildrenCount(), 3)
+	test.AssertEqual(t, children[0].Kind(), ast.KSection)
+	test.AssertEqual(t, children[0].Id(), "s1")
+	test.AssertEqual(t, children[0].ChildrenCount(), 3)
+	test.AssertEqual(t, children[0].Children()[0].Kind(), ast.KComment)
+	test.AssertEqual(t, children[0].Children()[1].Kind(), ast.KExpression)
+	test.AssertEqual(t, children[1].Kind(), ast.KSection)
+	test.AssertEqual(t, children[2].Kind(), ast.KSection)
+	test.AssertEqual(t, children[2].Children()[0].Kind(), ast.KComment)
+	test.AssertEqual(t, children[2].Children()[1].Kind(), ast.KExpression)
+}
