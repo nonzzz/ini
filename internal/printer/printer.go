@@ -47,7 +47,7 @@ func (p *printer) section(node ast.Element) {
 	if node.ChildrenCount() > 0 {
 		// ensure followed comment
 		children := node.Children()
-		if children[0].Kind() == ast.KComment && node.Loc().Column != children[0].Loc().Column {
+		if node.Loc().Column != children[0].Loc().Column {
 			p.printNewLine()
 		}
 		for _, child := range children {

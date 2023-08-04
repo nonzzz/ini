@@ -17,7 +17,6 @@ type parser struct {
 
 func Parser(input string) *ast.Node {
 	result := lexer.Tokenizer(input)
-
 	p := &parser{
 		input:      input,
 		end:        len(result.Tokens),
@@ -50,18 +49,17 @@ loop:
 		case lexer.TComment:
 			document = append(document, p.parseComment())
 			p.advance()
-			continue
 		case lexer.TIdent:
 			document = append(document, p.parseExpression())
-			p.advance()
-			continue
+			if p.peek(lexer.TWhitesapce) {
+				p.advance()
+			}
 		case lexer.TOpenBrace:
 			p.eat(lexer.TOpenBrace)
 			nested := p.convertSection()
 			if nested != nil {
 				document = append(document, nested)
 			}
-			continue
 		default:
 			break loop
 		}
@@ -135,6 +133,7 @@ func (p *parser) parseExpression() *ast.Node {
 
 	if p.current().Kind == lexer.TComment {
 		node.AppendChild(p.parseComment())
+		p.advance()
 	}
 
 	raw := sb.String()
@@ -210,7 +209,9 @@ func (p *parser) convertSection() *ast.Node {
 				break nesetd
 			case lexer.TIdent:
 				node.AppendChild(p.parseExpression())
-				p.advance()
+				if p.peek(lexer.TWhitesapce) {
+					p.advance()
+				}
 			default:
 				break nesetd
 			}

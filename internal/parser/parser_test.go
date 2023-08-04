@@ -53,6 +53,7 @@ func TestSection(t *testing.T) {
 	test.AssertEqual(t, children[0].ChildrenCount(), 3)
 	test.AssertEqual(t, children[0].Children()[0].Kind(), ast.KComment)
 	test.AssertEqual(t, children[0].Children()[1].Kind(), ast.KExpression)
+	test.AssertEqual(t, children[0].Children()[2].Kind(), ast.KExpression)
 	test.AssertEqual(t, children[1].Kind(), ast.KSection)
 	test.AssertEqual(t, children[2].Kind(), ast.KSection)
 	test.AssertEqual(t, children[2].Children()[0].Kind(), ast.KComment)
