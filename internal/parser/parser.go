@@ -139,7 +139,7 @@ func (p *parser) parseExpression() *ast.Node {
 
 	raw := sb.String()
 	ast.UpdateNode(node, map[string]interface{}{
-		"key":   key,
+		"key":   strings.TrimSpace(key),
 		"text":  raw,
 		"loc":   lexer.Loc{Start: loc.Start, Column: loc.Column, Len: p.current().Loc.End()},
 		"value": strings.TrimSpace(raw[len(key)+1:]),

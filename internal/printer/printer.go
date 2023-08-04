@@ -1,6 +1,8 @@
 package printer
 
-import "github.com/nonzzz/ini/pkg/ast"
+import (
+	"github.com/nonzzz/ini/internal/ast"
+)
 
 type printer struct {
 	code []byte
@@ -14,67 +16,63 @@ func (p *printer) print(text string) {
 	p.code = append(p.code, text...)
 }
 
-func (p *printer) expression(node *ast.ExpressionNode) {
+func (p *printer) expression(node ast.Element) {
 
-	if len(node.Nodes) > 0 {
-		p.print(node.Key)
-		p.print(" ")
-		p.print("=")
-		p.print(node.Value)
-		for _, child := range node.Nodes {
-			switch c := child.(type) {
-			case *ast.CommentNode:
-				p.comment(c)
-			}
-		}
-		return
-	}
-	p.print(node.Key)
+	attr := node.Attribute()
+	p.print(attr.Key)
 	p.print(" ")
 	p.print("=")
-	p.print(node.Value)
+	p.print(" ")
+	p.print(attr.Value)
+	if node.ChildrenCount() > 0 {
+		children := node.Children()
+		if children[0].Kind() == ast.KComment {
+			p.comment(children[0])
+		}
+	} else {
+		p.printNewLine()
+	}
+}
+
+func (p *printer) comment(node ast.Element) {
+	p.print("#")
+	p.print(node.Id())
 	p.printNewLine()
 }
 
-func (p *printer) comment(node *ast.CommentNode) {
-	p.print(node.Text)
-	p.printNewLine()
-}
-
-func (p *printer) section(node *ast.SectionNode) {
-	if len(node.Nodes) > 0 {
-		p.print("[")
-		p.print(node.Name)
-		p.print("]")
-		for i, child := range node.Nodes {
-			switch c := child.(type) {
-			case *ast.ExpressionNode:
-				if i == 0 {
-					p.printNewLine()
-				}
-				p.expression(c)
-			case *ast.CommentNode:
-				p.comment(c)
+func (p *printer) section(node ast.Element) {
+	p.print("[")
+	p.print(node.Id())
+	p.print("]")
+	if node.ChildrenCount() > 0 {
+		// ensure followed comment
+		children := node.Children()
+		if children[0].Kind() == ast.KComment && node.Loc().Column != children[0].Loc().Column {
+			p.printNewLine()
+		}
+		for _, child := range children {
+			switch child.Kind() {
+			case ast.KComment:
+				p.comment(child)
+			case ast.KExpression:
+				p.expression(child)
 			}
 		}
-		return
+	} else {
+		p.printNewLine()
 	}
-	p.print("[")
-	p.print(node.Name)
-	p.print("]")
-	p.printNewLine()
 }
 
-func Printer(tree *ast.Document) string {
+func Printer(tree ast.Element) string {
 	p := printer{}
-	for _, node := range tree.Nodes {
-		switch n := node.(type) {
-		case *ast.SectionNode:
-			p.section(n)
-		case *ast.CommentNode:
-			p.comment(n)
-		case *ast.ExpressionNode:
-			p.expression(n)
+	for _, element := range tree.Children() {
+		switch element.Kind() {
+		case ast.KSection:
+			p.section(element)
+		case ast.KComment:
+			p.comment(element)
+		case ast.KExpression:
+			p.expression(element)
 		}
 	}
 	return string(p.code)
