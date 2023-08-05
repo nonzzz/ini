@@ -3,8 +3,8 @@ package parser
 import (
 	"strings"
 
+	"github.com/nonzzz/ini/internal/ast"
 	"github.com/nonzzz/ini/internal/lexer"
-	"github.com/nonzzz/ini/pkg/ast"
 )
 
 type parser struct {
@@ -12,34 +12,32 @@ type parser struct {
 	start      int
 	end        int
 	tokens     []lexer.Token
-	secPos     int
-	hasSec     bool
 	approxLine int
 }
 
-func Parser(input string) *ast.Document {
+func Parser(input string) *ast.Node {
 	result := lexer.Tokenizer(input)
-
 	p := &parser{
 		input:      input,
 		end:        len(result.Tokens),
 		tokens:     result.Tokens,
 		approxLine: result.ApproxLine,
 	}
-	document := p.parse()
-	doc := &ast.Document{}
-	doc.Type = ast.Doc
-	doc.Loc = lexer.Loc{Start: 0, Len: p.current().Loc.End()}
-	doc.Nodes = document
 
-	return doc
+	elements := p.parse()
+	document := ast.NewNode(ast.KDocument)
+	ast.UpdateNode(document, map[string]interface{}{
+		"loc": lexer.Loc{Start: 0, Len: p.current().Loc.End()},
+	})
+	document.AppendChilden(elements)
+	return document
 
 }
 
-func (p *parser) parse() []ast.Node {
+func (p *parser) parse() []ast.Element {
 
 	// It's just a pre-allocation.
-	var document []ast.Node = make([]ast.Node, 0, p.approxLine)
+	var document = make([]ast.Element, 0, p.approxLine)
 loop:
 	for {
 		switch p.current().Kind {
@@ -49,33 +47,19 @@ loop:
 			p.advance()
 			continue
 		case lexer.TComment:
-			comment := &ast.CommentNode{}
-			comment.Type = ast.Comment
-			comment.Loc = p.current().Loc
-			comment.Text = p.decoded()
-			comment.Comma = comment.Text[0:1]
-			if p.hasSec {
-				document[p.secPos].(*ast.SectionNode).Nodes = append(document[p.secPos].(*ast.SectionNode).Nodes, comment)
-			} else {
-				document = append(document, comment)
-			}
+			document = append(document, p.parseComment())
 			p.advance()
-			continue
 		case lexer.TIdent:
-			// The token type is <ident-token> must be an expression
-			// Because parseExpression will consume all tokens until the next <ident-token>
-			expr := p.parseExpression()
-			if p.hasSec {
-				document[p.secPos].(*ast.SectionNode).Nodes = append(document[p.secPos].(*ast.SectionNode).Nodes, expr)
-			} else {
-				document = append(document, expr)
+			document = append(document, p.parseExpression())
+			if p.peek(lexer.TWhitesapce) {
+				p.advance()
 			}
-			continue
 		case lexer.TOpenBrace:
-			sec := p.parseSection()
-			document = append(document, sec)
-			p.secPos = len(document) - 1
-			continue
+			p.eat(lexer.TOpenBrace)
+			nested := p.convertSection()
+			if nested != nil {
+				document = append(document, nested)
+			}
 		default:
 			break loop
 		}
@@ -126,85 +110,114 @@ func (p *parser) decoded() string {
 	return p.current().DecodedText(p.input)
 }
 
-func (p *parser) parseExpression() (expr *ast.ExpressionNode) {
-	expr = &ast.ExpressionNode{}
-	expr.Type = ast.Expr
-	expr.Loc = p.current().Loc
-	expr.Key = strings.TrimSpace(p.decoded())
-	rs := strings.Builder{}
-	v := strings.Builder{}
-	rs.WriteString(p.decoded())
-	p.advance()
-loop:
+func (p *parser) parseExpression() *ast.Node {
+	var sb strings.Builder
+	node := ast.NewNode(ast.KExpression)
+	loc := p.current().Loc
+	record := false
+	key := ""
+
 	for {
-		switch p.current().Kind {
-		case lexer.TEof:
-			break loop
-		case lexer.TWhitesapce, lexer.TOpenBrace:
-			rs.WriteString(p.decoded())
-			v.WriteString(p.decoded())
-			p.advance()
-			continue
-		case lexer.TCloseBrace:
-			rs.WriteString(p.decoded())
-			v.WriteString(p.decoded())
-			if p.at(p.start+1).Kind == lexer.TComment {
-				p.advance()
-				continue
-			}
-			break loop
-		case lexer.TEqual:
-			rs.WriteString(p.decoded())
-			p.eat(lexer.TEqual)
-			continue
-		case lexer.TComment:
-			comment := &ast.CommentNode{}
-			comment.Type = ast.Comment
-			comment.Loc = p.current().Loc
-			comment.Text = p.decoded()
-			comment.Comma = comment.Text[0:1]
-			expr.Nodes = append(expr.Nodes, comment)
-			break loop
-		case lexer.TIdent:
-			rs.WriteString(p.decoded())
-			v.WriteString(p.decoded())
-			if p.at(p.start+1).Loc.Column != expr.Loc.Column {
-				break loop
-			}
-			p.advance()
-			continue
-		}
-	}
-
-	expr.Text = rs.String()
-	expr.Loc.Len = p.current().Loc.End()
-	expr.Value = v.String()
-	p.advance()
-	return expr
-}
-
-func (p *parser) parseSection() (sec *ast.SectionNode) {
-	p.hasSec = false
-	sec = &ast.SectionNode{}
-	sec.Type = ast.Sec
-	sec.Loc = p.current().Loc
-	rs := strings.Builder{}
-	v := strings.Builder{}
-	rs.WriteString(p.decoded())
-	for p.current().Kind != lexer.TCloseBrace {
-		if p.current().Kind == lexer.TEof {
+		if p.current().Loc.Column != loc.Column ||
+			p.current().Kind == lexer.TEof ||
+			p.current().Kind == lexer.TComment {
 			break
 		}
-		p.eat(p.current().Kind)
-		if p.current().Kind != lexer.TCloseBrace {
-			v.WriteString(p.decoded())
+		if p.current().Kind == lexer.TEqual && !record {
+			record = true
+			key = sb.String()
 		}
-		rs.WriteString(p.decoded())
+		sb.WriteString(p.decoded())
+		p.advance()
 	}
-	sec.Text = rs.String()
-	sec.Name = v.String()
-	sec.Loc.Len = p.current().Loc.End()
-	p.advance()
-	p.hasSec = true
-	return sec
+
+	if p.current().Kind == lexer.TComment {
+		node.AppendChild(p.parseComment())
+		p.advance()
+	}
+
+	raw := sb.String()
+	ast.UpdateNode(node, map[string]interface{}{
+		"key":   strings.TrimSpace(key),
+		"text":  raw,
+		"loc":   lexer.Loc{Start: loc.Start, Column: loc.Column, Len: p.current().Loc.End()},
+		"value": strings.TrimSpace(raw[len(key)+1:]),
+	})
+	return node
+}
+
+func (p *parser) parseComment() *ast.Node {
+	node := ast.NewNode(ast.KComment)
+	raw := p.decoded()
+	ast.UpdateNode(node, map[string]interface{}{
+		"text": raw,
+		"id":   raw[1:],
+		"loc":  p.current().Loc,
+	})
+	return node
+}
+
+func (p *parser) convertSection() *ast.Node {
+
+	var sb strings.Builder
+	sb.WriteString("[")
+	node := ast.NewNode(ast.KSection)
+	loc := p.current().Loc
+	for {
+		if p.current().Loc.Column != loc.Column ||
+			p.current().Kind == lexer.TEof ||
+			p.current().Kind == lexer.TCloseBrace {
+			if p.current().Kind == lexer.TCloseBrace {
+				sb.WriteString("]")
+				p.advance()
+			}
+			break
+		}
+		sb.WriteString(p.decoded())
+		p.advance()
+	}
+	for {
+		if p.at(p.start+1).Kind == lexer.TCloseBrace && p.current().Loc.Column == loc.Column {
+			sb.WriteString(p.decoded())
+			p.advance()
+		} else {
+			break
+		}
+	}
+
+	s := sb.String()
+	if strings.HasSuffix(s, "]") {
+		ast.UpdateNode(node, map[string]interface{}{
+			"text": s,
+			"id":   s[1 : len(s)-1],
+			"loc":  lexer.Loc{Start: loc.Start, Column: loc.Column, Len: p.current().Loc.End()},
+		})
+		for p.current().Kind == lexer.TWhitesapce {
+			p.advance()
+		}
+		if p.current().Kind == lexer.TComment {
+			node.AppendChild(p.parseComment())
+			p.advance()
+		}
+	nesetd:
+		for {
+			switch p.current().Kind {
+			case lexer.TWhitesapce:
+				p.advance()
+				continue
+			case lexer.TOpenBrace:
+				break nesetd
+			case lexer.TIdent:
+				node.AppendChild(p.parseExpression())
+				if p.peek(lexer.TWhitesapce) {
+					p.advance()
+				}
+			default:
+				break nesetd
+			}
+
+		}
+		return node
+	}
+	return nil
 }

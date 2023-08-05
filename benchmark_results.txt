@@ -1,8 +1,8 @@
 goos: windows
 goarch: amd64
 pkg: github.com/nonzzz/ini
-cpu: AMD Ryzen 7 4800H with Radeon Graphics         
-BenchmarkIniParse-16      	 2146263	      2758 ns/op	    2136 B/op	      35 allocs/op
-BenchmarkIniPrinter-16    	 1881651	      3153 ns/op	    2320 B/op	      40 allocs/op
+cpu: AMD Ryzen 7 4800H with Radeon Graphics
+BenchmarkIniParse-16             1000000              5181 ns/op            2936 B/op         59 allocs/op
+BenchmarkIniPrinter-16           1000000              5580 ns/op            3120 B/op         64 allocs/op
 PASS
-ok  	github.com/nonzzz/ini	18.127s
+ok      github.com/nonzzz/ini   11.090s
