@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-var input, _ = os.ReadFile("./str.ini")
+var input, _ = os.ReadFile("./case/str.ini")
 
 func BenchmarkIniParse(b *testing.B) {
 
