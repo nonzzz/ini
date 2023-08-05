@@ -5,13 +5,13 @@ import (
 	"errors"
 	"os"
 
+	"github.com/nonzzz/ini/internal/ast"
 	"github.com/nonzzz/ini/internal/parser"
 	"github.com/nonzzz/ini/internal/printer"
-	"github.com/nonzzz/ini/pkg/ast"
 )
 
 type Ini struct {
-	document *ast.Document
+	document ast.Element
 }
 
 func New() *Ini {
@@ -32,30 +32,40 @@ func (i *Ini) Parse(input string) *Ini {
 	return i
 }
 
+func traverse(node ast.Element, walker func(node ast.Element)) {
+	walker(node)
+	if node.ChildrenCount() > 0 {
+		for _, child := range node.Children() {
+			traverse(child, walker)
+		}
+	}
+}
+
 func (i *Ini) Marshal2Map() map[string]interface{} {
-	if i.document == nil {
+
+	if i.document.ChildrenCount() == 0 {
 		return nil
 	}
 
 	iniMap := make(map[string]interface{})
 
-	currentSection := ""
+	var currentSection string
 
-	i.Walk(func(node ast.Node, _ ast.Node) {
-		switch t := node.(type) {
-		case *ast.SectionNode:
-			currentSection = t.Name
-			sectionMap := make(map[string]interface{})
+	traverse(i.document, func(node ast.Element) {
+		switch node.Kind() {
+		case ast.KSection:
+			currentSection = node.Id()
+			sectionMap := make(map[string]interface{}, node.ChildrenCount())
 			iniMap[currentSection] = sectionMap
-		case *ast.ExpressionNode:
-			if _, ok := iniMap[currentSection].(map[string]interface{}); !ok {
-				iniMap[t.Key] = t.Value
+		case ast.KExpression:
+			attr := node.Attribute()
+			if _, ok := iniMap[currentSection]; !ok {
+				iniMap[attr.Key] = attr.Value
 				return
 			}
-			iniMap[currentSection].(map[string]interface{})[t.Key] = t.Value
+			iniMap[currentSection].(map[string]interface{})[attr.Key] = attr.Value
 		}
 	})
-
 	return iniMap
 }
 
@@ -73,8 +83,4 @@ func (i *Ini) Printer() (string, error) {
 		return "", errors.New("[ini]: Node is empty.Please called LoadFile or Parse")
 	}
 	return printer.Printer(i.document), nil
-}
-
-func (i *Ini) Walk(walker ast.Walker) {
-	ast.Walk(i.document, walker)
 }
