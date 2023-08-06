@@ -122,7 +122,7 @@ func (selector *selector) Expression(key string) Operate {
 	var n ast.Element = nil
 	var pos = 0
 	traverse(selector.ast, pos, func(node ast.Element, position int) bool {
-		if node.Id() == key && node.Kind() == ast.KExpression {
+		if node.Attribute().Key == key && node.Kind() == ast.KExpression {
 			n = node
 			pos = position
 			return true
@@ -138,7 +138,7 @@ func (selector *selector) Expression(key string) Operate {
 
 func (op *operate) Get() (ast.Element, error) {
 	if op.node == nil {
-		return nil, errors.New(fmt.Sprintf("%s%s", "[ini]: can't find section", op.Id))
+		return nil, errors.New(fmt.Sprintf("%s%s", "[ini]: can't find node ", op.Id))
 	}
 	return op.node, nil
 }
