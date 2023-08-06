@@ -32,11 +32,14 @@ func (i *Ini) Parse(input string) *Ini {
 	return i
 }
 
-func traverse(node ast.Element, walker func(node ast.Element)) {
-	walker(node)
+func traverse(node ast.Element, pos int, walker func(node ast.Element, pos int) bool) {
+	skip := walker(node, pos)
+	if skip {
+		return
+	}
 	if node.ChildrenCount() > 0 {
-		for _, child := range node.Children() {
-			traverse(child, walker)
+		for i, child := range node.Children() {
+			traverse(child, i, walker)
 		}
 	}
 }
@@ -51,7 +54,7 @@ func (i *Ini) Marshal2Map() map[string]interface{} {
 
 	var currentSection string
 
-	traverse(i.document, func(node ast.Element) {
+	traverse(i.document, 0, func(node ast.Element, pos int) bool {
 		switch node.Kind() {
 		case ast.KSection:
 			currentSection = node.Id()
@@ -61,10 +64,11 @@ func (i *Ini) Marshal2Map() map[string]interface{} {
 			attr := node.Attribute()
 			if _, ok := iniMap[currentSection]; !ok {
 				iniMap[attr.Key] = attr.Value
-				return
+			} else {
+				iniMap[currentSection].(map[string]interface{})[attr.Key] = attr.Value
 			}
-			iniMap[currentSection].(map[string]interface{})[attr.Key] = attr.Value
 		}
+		return false
 	})
 	return iniMap
 }
