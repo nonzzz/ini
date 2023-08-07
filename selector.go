@@ -106,9 +106,9 @@ func (selector *selector) Comment(id string) Operate {
 			n = node
 		}
 	} else {
-		traverse(selector.ast, func(node ast.Element) bool {
+		traverse(selector.ast, nil, func(node, parentNode ast.Element) bool {
 			if node.Kind() == ast.KComment {
-				if _, ok := node.ChildrenParis()[id]; ok {
+				if _, ok := parentNode.ChildrenParis()[id]; ok {
 					n = node
 					return true
 				}
@@ -130,9 +130,9 @@ func (selector *selector) Expression(key string) Operate {
 			n = node
 		}
 	} else {
-		traverse(selector.ast, func(node ast.Element) bool {
+		traverse(selector.ast, nil, func(node, parentNode ast.Element) bool {
 			if node.Kind() == ast.KExpression {
-				if _, ok := node.ChildrenParis()[key]; ok {
+				if _, ok := parentNode.ChildrenParis()[key]; ok {
 					n = node
 					return true
 				}

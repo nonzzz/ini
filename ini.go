@@ -32,14 +32,14 @@ func (i *Ini) Parse(input string) *Ini {
 	return i
 }
 
-func traverse(node ast.Element, walker func(node ast.Element) bool) {
-	skip := walker(node)
+func traverse(node ast.Element, parentNode ast.Element, walker func(node, parentNode ast.Element) bool) {
+	skip := walker(node, parentNode)
 	if skip {
 		return
 	}
 	if node.ChildrenCount() > 0 {
 		for _, child := range node.Children() {
-			traverse(child, walker)
+			traverse(child, node, walker)
 		}
 	}
 }
@@ -54,7 +54,7 @@ func (i *Ini) Marshal2Map() map[string]interface{} {
 
 	var currentSection string
 
-	traverse(i.document, func(node ast.Element) bool {
+	traverse(i.document, nil, func(node, parentNode ast.Element) bool {
 		switch node.Kind() {
 		case ast.KSection:
 			currentSection = node.Id()
