@@ -1,8 +1,8 @@
 package ini
 
 import (
-	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/nonzzz/ini/internal/ast"
 )
@@ -46,10 +46,6 @@ type selector struct {
 	ast ast.Element
 }
 
-func isEmptyNode(node ast.Element) bool {
-	return node.ChildrenCount() == 0
-}
-
 func getValue(values ...string) string {
 	for _, value := range values {
 		if value != "" {
@@ -68,9 +64,18 @@ func serializationBindings(previousBindings, bindings AttributeBindings) map[str
 	return props
 }
 
-func NewSelector(ini *Ini) Selector {
-	return &selector{
-		ast: ini.document,
+func NewSelector(accept interface{}) Selector {
+	t := reflect.TypeOf(accept)
+	if t.Kind() == reflect.Ptr && t.Elem().Name() == "Ini" {
+		return &selector{
+			ast: accept.(*Ini).document,
+		}
+	} else if ast, ok := accept.(ast.Element); ok {
+		return &selector{
+			ast: ast,
+		}
+	} else {
+		panic("invalid type")
 	}
 }
 
@@ -138,7 +143,7 @@ func (selector *selector) Expression(key string) Operate {
 
 func (op *operate) Get() (ast.Element, error) {
 	if op.node == nil {
-		return nil, errors.New(fmt.Sprintf("%s%s", "[ini]: can't find node ", op.Id))
+		return nil, fmt.Errorf("%s%s", "[ini]: can't find node ", op.Id)
 	}
 	return op.node, nil
 }
