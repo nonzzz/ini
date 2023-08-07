@@ -131,7 +131,7 @@ func (p *parser) parseExpression() *ast.Node {
 		p.advance()
 	}
 
-	if p.current().Kind == lexer.TComment {
+	if p.current().Kind == lexer.TComment && p.current().Loc.Column == loc.Column {
 		node.AppendChild(p.parseComment())
 		p.advance()
 	}
