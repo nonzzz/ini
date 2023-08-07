@@ -21,7 +21,7 @@ $ go get github.com/nonzzz/ini
 - Read by file.
 - Read by string.
 - Marshal to Json or Map.
-- Support Accpect (visitor pattern).
+- Friendly Selector
 
 ## Usage
 
@@ -50,30 +50,9 @@ ini.Parse(txt)
 
 ```
 
-## Abstract syntax tree
+## Document
 
-```
-
-DocumentNode {
-    Type: doc,
-    Nodes: [
-        ExpressionNode {
-            Type: section
-            Nodes: []
-        },
-        SectionNode {
-            Type: section
-            Nodes: []
-        },
-    ]
-    Loc: {
-        Start: 0,
-        Len: 0,
-    }
-
-}
-
-```
+- [selector](./docs/selector.md)
 
 ## Acknowledgements
 

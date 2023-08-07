@@ -1,4 +1,4 @@
-package mem
+package ast
 
 type LinkedNode struct {
 	Element string

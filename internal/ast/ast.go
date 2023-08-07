@@ -2,7 +2,6 @@ package ast
 
 import (
 	"github.com/nonzzz/ini/internal/lexer"
-	"github.com/nonzzz/ini/internal/mem"
 )
 
 type K uint8
@@ -36,6 +35,7 @@ type Element interface {
 	Id() string
 	Text() string
 	Children() []Element
+	ChildrenParis() map[string]Element
 	ChildrenCount() int
 	Attribute() Attribute
 	AppendChild(node Element)
@@ -46,7 +46,7 @@ type Element interface {
 type Node struct {
 	kind  K
 	id    string
-	mem   *mem.Mem
+	mem   *Mem
 	key   string
 	value string
 	text  string
@@ -81,6 +81,10 @@ func (n *Node) Children() []Element {
 		attr = attr.Next()
 	}
 	return elements
+}
+
+func (n *Node) ChildrenParis() map[string]Element {
+	return n.mem.Paris()
 }
 
 func (n *Node) ChildrenCount() int {
@@ -131,7 +135,7 @@ func (n *Node) SetLoc(loc lexer.Loc) {
 func NewNode(kind K) *Node {
 	return &Node{
 		kind: kind,
-		mem:  mem.NewMap(),
+		mem:  NewMap(),
 	}
 }
 

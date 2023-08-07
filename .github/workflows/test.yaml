@@ -13,16 +13,6 @@ jobs:
         with:
           go-version: "1.19"
 
-      - name: cache go modules
-        uses: actions/cache@v2
-        with:
-          path: |
-            ${{ steps.vars.outputs.go_cache }}
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-${{ matrix.go }}-go-ci-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.go }}-go-ci
-
       - name: run unit test cases
         run: make test-coverage
 

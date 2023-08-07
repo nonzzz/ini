@@ -39,7 +39,6 @@ type Selector interface {
 type operate struct {
 	node ast.Element
 	Id   string
-	pos  int
 }
 
 type selector struct {
@@ -89,55 +88,61 @@ func UpdateNodeAttributeBindings(node ast.Element, bindings AttributeBindings) {
 
 func (selector *selector) Section(id string) Operate {
 	var n ast.Element = nil
-	var pos = 0
-	traverse(selector.ast, pos, func(node ast.Element, position int) bool {
-		if node.Kind() == ast.KSection && node.Id() == id {
+	if node, ok := selector.ast.ChildrenParis()[id]; ok {
+		if node.Kind() == ast.KSection {
 			n = node
-			pos = position
-			return true
 		}
-		return false
-	})
+	}
 	return &operate{
 		node: n,
 		Id:   id,
-		pos:  pos,
 	}
 }
 
 func (selector *selector) Comment(id string) Operate {
 	var n ast.Element = nil
-	var pos = 0
-	traverse(selector.ast, pos, func(node ast.Element, position int) bool {
-		if node.Id() == id && node.Kind() == ast.KComment {
+	if selector.ast.Kind() == ast.KSection || selector.ast.Kind() == ast.KExpression {
+		if node, ok := selector.ast.ChildrenParis()[id]; ok {
 			n = node
-			pos = position
-			return true
 		}
-		return false
-	})
+	} else {
+		traverse(selector.ast, func(node ast.Element) bool {
+			if node.Kind() == ast.KComment {
+				if _, ok := node.ChildrenParis()[id]; ok {
+					n = node
+					return true
+				}
+			}
+
+			return false
+		})
+	}
 	return &operate{
 		node: n,
 		Id:   id,
-		pos:  pos,
 	}
 }
 
 func (selector *selector) Expression(key string) Operate {
 	var n ast.Element = nil
-	var pos = 0
-	traverse(selector.ast, pos, func(node ast.Element, position int) bool {
-		if node.Attribute().Key == key && node.Kind() == ast.KExpression {
+	if selector.ast.Kind() == ast.KSection {
+		if node, ok := selector.ast.ChildrenParis()[key]; ok {
 			n = node
-			pos = position
-			return true
 		}
-		return false
-	})
+	} else {
+		traverse(selector.ast, func(node ast.Element) bool {
+			if node.Kind() == ast.KExpression {
+				if _, ok := node.ChildrenParis()[key]; ok {
+					n = node
+					return true
+				}
+			}
+			return false
+		})
+	}
 	return &operate{
 		node: n,
 		Id:   key,
-		pos:  pos,
 	}
 }
 

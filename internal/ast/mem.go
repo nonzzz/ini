@@ -1,4 +1,4 @@
-package mem
+package ast
 
 // This file is a ordered map implement.
 // Ordered map is a memeory friendly data struct
@@ -9,24 +9,24 @@ package mem
 
 type Mem struct {
 	list  *LinkedList
-	paris map[string]interface{}
+	paris map[string]Element
 }
 
 func NewMap() *Mem {
 	m := &Mem{}
-	m.paris = make(map[string]interface{})
+	m.paris = make(map[string]Element)
 	m.list = NewLinkedList()
 	return m
 }
 
-func (mem *Mem) Set(key string, value interface{}) {
+func (mem *Mem) Set(key string, value Element) {
 	if !mem.Has(key) {
 		mem.list.Append(key)
 	}
 	mem.paris[key] = value
 }
 
-func (mem *Mem) Get(key string) interface{} {
+func (mem *Mem) Get(key string) Element {
 	return mem.paris[key]
 }
 
@@ -50,7 +50,7 @@ func (mem *Mem) Len() int {
 	return mem.list.Cap
 }
 
-func (mem *Mem) Paris() map[string]interface{} {
+func (mem *Mem) Paris() map[string]Element {
 	return mem.paris
 }
 
