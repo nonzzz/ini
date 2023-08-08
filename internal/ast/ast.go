@@ -41,6 +41,7 @@ type Element interface {
 	AppendChild(node Element)
 	AppendChilden(children []Element)
 	Loc() lexer.Loc
+	RemoveChild(key string) bool
 }
 
 type Node struct {
@@ -77,7 +78,7 @@ func (n *Node) Children() []Element {
 	elements := make([]Element, 0, n.mem.Len())
 	attr := n.mem.List().Head
 	for attr != nil {
-		elements = append(elements, n.mem.Get(attr.Element).(Element))
+		elements = append(elements, n.mem.Get(attr.Element))
 		attr = attr.Next()
 	}
 	return elements
@@ -89,6 +90,10 @@ func (n *Node) ChildrenParis() map[string]Element {
 
 func (n *Node) ChildrenCount() int {
 	return n.mem.Len()
+}
+
+func (n *Node) RemoveChild(key string) bool {
+	return n.mem.Delete(key)
 }
 
 func (n *Node) Attribute() Attribute {

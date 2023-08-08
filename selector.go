@@ -26,19 +26,16 @@ type Operate interface {
 	Get() (ast.Element, error)
 	Set(bindings AttributeBindings) bool
 	Delete() bool
-	InsertBefore(node ast.Element) bool
-	InsertAfter(node ast.Element) bool
 }
 
 type Selector interface {
-	Section(id string) Operate
-	Comment(id string) Operate
-	Expression(key string) Operate
+	Query(id string, kind ast.K) Operate
 }
 
 type operate struct {
-	node ast.Element
-	Id   string
+	node       ast.Element
+	parentNode ast.Element
+	Id         string
 }
 
 type selector struct {
@@ -55,11 +52,12 @@ func getValue(values ...string) string {
 }
 
 func serializationBindings(previousBindings, bindings AttributeBindings) map[string]interface{} {
-	props := make(map[string]interface{}, 4)
+	props := make(map[string]interface{}, 5)
 	props["id"] = getValue(bindings.Id, previousBindings.Id)
 	props["text"] = getValue(bindings.Text, previousBindings.Text)
 	props["key"] = getValue(bindings.Key, previousBindings.Key)
 	props["value"] = getValue(bindings.Value, previousBindings.Value, previousBindings.Value)
+	props["refresh"] = true // for update mem
 	return props
 }
 
@@ -78,7 +76,7 @@ func NewSelector(accept interface{}) Selector {
 	}
 }
 
-func CreateNode(kind ast.K) ast.Element {
+func NewNode(kind ast.K) ast.Element {
 	return ast.NewNode(kind)
 }
 
@@ -86,54 +84,23 @@ func UpdateNodeAttributeBindings(node ast.Element, bindings AttributeBindings) {
 	ast.UpdateNode(node.(*ast.Node), serializationBindings(AttributeBindings{}, bindings))
 }
 
-func (selector *selector) Section(id string) Operate {
+func (selector *selector) Query(id string, kind ast.K) Operate {
 	var n ast.Element = nil
-	if node, ok := selector.ast.ChildrenParis()[id]; ok {
-		if node.Kind() == ast.KSection {
-			n = node
-		}
-	}
-	return &operate{
-		node: n,
-		Id:   id,
-	}
-}
+	var parent ast.Element = nil
 
-func (selector *selector) Comment(id string) Operate {
-	var n ast.Element = nil
-	if selector.ast.Kind() == ast.KSection || selector.ast.Kind() == ast.KExpression {
+	if kind == SectionKind {
 		if node, ok := selector.ast.ChildrenParis()[id]; ok {
-			n = node
-		}
-	} else {
-		traverse(selector.ast, nil, func(node, parentNode ast.Element) bool {
-			if node.Kind() == ast.KComment {
-				if _, ok := parentNode.ChildrenParis()[id]; ok {
-					n = node
-					return true
-				}
+			if node.Kind() == SectionKind {
+				n = node
+				parent = selector.ast
 			}
-
-			return false
-		})
-	}
-	return &operate{
-		node: n,
-		Id:   id,
-	}
-}
-
-func (selector *selector) Expression(key string) Operate {
-	var n ast.Element = nil
-	if selector.ast.Kind() == ast.KSection {
-		if node, ok := selector.ast.ChildrenParis()[key]; ok {
-			n = node
 		}
 	} else {
 		traverse(selector.ast, nil, func(node, parentNode ast.Element) bool {
-			if node.Kind() == ast.KExpression {
-				if _, ok := parentNode.ChildrenParis()[key]; ok {
-					n = node
+			if node.Kind() == kind && n == nil {
+				if el, ok := parentNode.ChildrenParis()[id]; ok {
+					n = el
+					parent = parentNode
 					return true
 				}
 			}
@@ -141,8 +108,9 @@ func (selector *selector) Expression(key string) Operate {
 		})
 	}
 	return &operate{
-		node: n,
-		Id:   key,
+		node:       n,
+		Id:         id,
+		parentNode: parent,
 	}
 }
 
@@ -168,22 +136,8 @@ func (op *operate) Set(bindings AttributeBindings) bool {
 }
 
 func (op *operate) Delete() bool {
-	if op.node == nil {
+	if op.node == nil && op.parentNode == nil {
 		return false
 	}
-	return true
-}
-
-func (op *operate) InsertBefore(node ast.Element) bool {
-	if op.node == nil {
-		return false
-	}
-	return true
-}
-
-func (op *operate) InsertAfter(node ast.Element) bool {
-	if op.node == nil {
-		return false
-	}
-	return true
+	return op.parentNode.RemoveChild(op.Id)
 }

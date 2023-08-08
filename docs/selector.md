@@ -11,18 +11,20 @@ const (
 	CommentKind    = ast.KComment
 )
 
+type AttributeBindings struct {
+	Id    string
+	Text  string
+	Key   string
+	Value string
+}
+
 type Operate interface {
 	Get() (ast.Element, error)
 	Set(bindings AttributeBindings) bool
 	Delete() bool
-	InsertBefore(node ast.Element) bool
-	InsertAfter(node ast.Element) bool
-}
 
 type Selector interface {
-	Section(id string) Operate
-	Comment(id string) Operate
-	Expression(key string) Operate
+	Query(id string, kind ast.K) Operate
 }
 
 ```
