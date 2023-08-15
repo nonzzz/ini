@@ -2,7 +2,7 @@
 
 <p align="center">
 <a title="Go Report Card" target="_blank" href="https://goreportcard.com/report/github.com/nonzzz/ini"><img src="https://goreportcard.com/badge/github.com/nonzzz/ini?style=flat-square" /></a>
-<a title="Doc for grm" target="_blank" href="https://pkg.go.dev/github.com/nonzzz/ini"><img src="https://pkg.go.dev/badge/github.com/nonzzz/ini.svg" /></a>
+<a title="Doc for ini" target="_blank" href="https://pkg.go.dev/github.com/nonzzz/ini"><img src="https://pkg.go.dev/badge/github.com/nonzzz/ini.svg" /></a>
 <a title="Codecov" target="_blank" href="https://codecov.io/gh/nonzzz/ini"><img src="https://img.shields.io/codecov/c/github/nonzzz/ini?style=flat-square&logo=codecov" /></a>
 </p>
 

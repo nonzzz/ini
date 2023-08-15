@@ -141,8 +141,7 @@ func (p *parser) parseExpression() *ast.Node {
 		"key":   strings.TrimSpace(key),
 		"text":  raw,
 		"loc":   lexer.Loc{Start: loc.Start, Column: loc.Column, Len: p.current().Loc.End()},
-		"value": strings.TrimSpace(raw[len(key)+1:]),
-	})
+		"value": strings.TrimSpace(raw[len(key)+1:]),	})
 	return node
 }
 

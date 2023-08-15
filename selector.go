@@ -52,12 +52,11 @@ func getValue(values ...string) string {
 }
 
 func serializationBindings(previousBindings, bindings AttributeBindings) map[string]interface{} {
-	props := make(map[string]interface{}, 5)
+	props := make(map[string]interface{}, 4)
 	props["id"] = getValue(bindings.Id, previousBindings.Id)
 	props["text"] = getValue(bindings.Text, previousBindings.Text)
 	props["key"] = getValue(bindings.Key, previousBindings.Key)
 	props["value"] = getValue(bindings.Value, previousBindings.Value, previousBindings.Value)
-	props["refresh"] = true // for update mem
 	return props
 }
 
